@@ -1,0 +1,26 @@
+name: haling
+version: 0.1
+author: asi1024, yu-i9
+synopsis: Haskell-like interpreter girl bot
+cabal-version: >= 1.10
+build-type: Simple
+
+library
+    Hs-source-dirs: src
+    Default-Language: Haskell2010
+    build-depends: base >= 4 && < 5
+                   , parsec == 3.1.8
+    exposed-modules:
+      Declar
+      Parser
+      Syntax
+      Typing
+    ghc-options:   -Wall
+
+executable main
+    Hs-source-dirs: src-exec
+    Default-Language: Haskell2010
+    main-is:  main.hs
+    build-depends: base >= 4 && < 5
+                   , haling
+    ghc-options:   -Wall
