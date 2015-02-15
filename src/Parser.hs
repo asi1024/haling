@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Parser(parseStmt) where
 
 import           Text.Parsec
@@ -19,13 +20,27 @@ def = emptyDef {
 lexer :: P.TokenParser st
 lexer = P.makeTokenParser def
 
+identifier :: Parser String
 identifier = P.identifier lexer
+
+reservedOp :: String -> Parser ()
 reservedOp = P.reservedOp lexer
-parens     = P.parens lexer
+
+parens :: forall a. Parser a -> Parser a
+parens = P.parens lexer
+
+whiteSpace :: Parser ()
 whiteSpace = P.whiteSpace lexer
-symbol     = P.symbol lexer
-integer    = P.integer lexer
-natural    = P.natural lexer
+
+symbol :: String -> Parser String
+symbol = P.symbol lexer
+
+integer :: Parser Integer
+integer = P.integer lexer
+
+natural :: Parser Integer
+natural = P.natural lexer
+
 
 parseStmt :: String -> Check Stmt
 parseStmt input = case parse stmt "" input of
