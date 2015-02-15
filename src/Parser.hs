@@ -8,6 +8,7 @@ import qualified Text.Parsec.Token as P
 import           Text.Parsec.Language
 
 import Control.Monad(liftM)
+import Data.Functor.Identity(Identity)
 import Syntax
 
 def :: LanguageDef st
@@ -70,6 +71,7 @@ decl = do
 prim :: Parser Expr
 prim = buildExpressionParser table exprNonPrim
 
+table :: [[Operator String () Identity Expr]]
 table = [[op_infix (reservedOp "*") (Prim "*") AssocLeft],
          [op_infix (reservedOp "+") (Prim "+") AssocLeft,
           op_infix (reservedOp "-") (Prim "-")  AssocLeft]]
