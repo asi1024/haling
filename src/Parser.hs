@@ -78,10 +78,10 @@ table = [[op_infix (reservedOp "*") (Prim "*") AssocLeft],
       op_infix  s f assoc = Infix (s >> return f) assoc
 
 exprNonPrim :: Parser Expr
-exprNonPrim =  parens expr
+exprNonPrim =  try funcApp
+           <|> parens expr
            <|> lambda
            <|> liftM (Val . fromIntegral) integer
-           <|> try funcApp
            <|> liftM Var identifier
 
 exprArg :: Parser Expr
