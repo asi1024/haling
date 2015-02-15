@@ -5,17 +5,17 @@ import Typing
 
 import System.IO (hPutStrLn, stderr)
 
-driverLoop :: Env -> IO()
-driverLoop env = do
+driverLoop :: TyEnv -> Env -> IO()
+driverLoop tyenv env = do
   str <- getLine
-  case parse str >>= typing of
+  case parse str >>= typing tyenv of
     Left er -> do
       hPutStrLn stderr er
-      driverLoop env
-    Right (t, st) -> do
-      let (nenv, s, e) = decl env t st
+      driverLoop tyenv env
+    Right (ntyenv, t, st) -> do
+      let (nenv, s, e) = decl env st
       putStrLn $ concat [s, " : ", show t, " = ", show e]
-      driverLoop nenv
+      driverLoop ntyenv nenv
 
 main :: IO()
-main = driverLoop [("w", TyInt, Val 3)]
+main = driverLoop [("w", TyInt)] [("w", Val 3)]

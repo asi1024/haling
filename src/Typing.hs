@@ -2,5 +2,5 @@ module Typing(typing) where
 
 import Syntax
 
-typing :: Stmt -> Check (Ty, Stmt)
-typing st = Right (TyInt, st)
+typing :: TyEnv -> Stmt -> Check (TyEnv, Ty, Stmt)
+typing tyenv st = Right (tyenv, TyInt, st)

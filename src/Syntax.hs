@@ -5,7 +5,8 @@ type Check = Either String
 err :: String -> Check a
 err s = Left s
 
-type Env = [(String, Ty, Expr)]
+type Env = [(String, Expr)]
+type TyEnv = [(String, Ty)]
 
 data Expr = Val  Int
           | Var  String
