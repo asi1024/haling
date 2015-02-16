@@ -57,9 +57,6 @@ stmt = do
 stmtBody :: Parser Stmt
 stmtBody = liftM Exp expr <|> decl
 
-expr :: Parser Expr
-expr = try prim <|> exprNonPrim
-
 decl :: Parser Stmt
 decl = do
   symbol "let"
@@ -68,8 +65,21 @@ decl = do
   e <- expr
   return $ Decl name e
 
+expr :: Parser Expr
+expr =  lambda
+    <|> prim
+    <|> liftM (Val . fromIntegral) integer
+
+lambda :: Parser Expr
+lambda = do
+  reservedOp "\\"
+  arg <- identifier
+  reservedOp "->"
+  e <- expr
+  return $ Fun arg e
+
 prim :: Parser Expr
-prim = buildExpressionParser table exprNonPrim
+prim = buildExpressionParser table appExpr
 
 table :: [[Operator String () Identity Expr]]
 table = [[op_infix (reservedOp "*") (Prim "*") AssocLeft],
@@ -79,37 +89,10 @@ table = [[op_infix (reservedOp "*") (Prim "*") AssocLeft],
       op_prefix s f       = Prefix (s >> return f)
       op_infix  s f assoc = Infix (s >> return f) assoc
 
-exprNonPrim :: Parser Expr
-exprNonPrim =  try funcApp
-           <|> parens expr
-           <|> lambda
-           <|> liftM (Val . fromIntegral) integer
-           <|> liftM Var identifier
+appExpr :: Parser Expr
+appExpr = unitExpr `chainl1` (return App)
 
-exprArg :: Parser Expr
-exprArg =  parens expr
-       <|> liftM (Val . fromIntegral) natural
-
-funcApp :: Parser Expr
-funcApp = do
-  fun <- func
-  arg <- exprArg
-  floop (App fun arg)
-
-func :: Parser Expr
-func =  parens lambda
-    <|> liftM Var identifier
-
-floop :: Expr -> Parser Expr
-floop fun = try ( do
-                  arg <- exprArg
-                  floop (App fun arg) )
-         <|> return fun
-
-lambda :: Parser Expr
-lambda = do
-  reservedOp "\\"
-  arg <- identifier
-  reservedOp "->"
-  e <- expr
-  return $ Fun arg e
+unitExpr :: Parser Expr
+unitExpr =  liftM (Val . fromIntegral) natural
+        <|> liftM Var identifier
+        <|> parens expr
