@@ -17,6 +17,7 @@ data Expr = Val  Int
 
 data Stmt = Exp Expr
           | Decl String Expr
+          deriving (Eq, Show)
 
 data Ty = TyInt
         | TyVar Int
