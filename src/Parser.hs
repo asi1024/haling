@@ -36,9 +36,6 @@ whiteSpace = P.whiteSpace lexer
 symbol :: String -> Parser String
 symbol = P.symbol lexer
 
-integer :: Parser Integer
-integer = P.integer lexer
-
 natural :: Parser Integer
 natural = P.natural lexer
 
@@ -68,7 +65,6 @@ decl = do
 expr :: Parser Expr
 expr =  lambda
     <|> prim
-    <|> liftM (Val . fromIntegral) integer
 
 lambda :: Parser Expr
 lambda = do
@@ -81,8 +77,12 @@ lambda = do
 prim :: Parser Expr
 prim = buildExpressionParser table appExpr
 
+neg :: Expr -> Expr
+neg = Prim "*" (Val (-1))
+
 table :: [[Operator String () Identity Expr]]
-table = [[op_infix (reservedOp "*") (Prim "*") AssocLeft],
+table = [[op_prefix (reservedOp "-") neg],
+         [op_infix (reservedOp "*") (Prim "*") AssocLeft],
          [op_infix (reservedOp "+") (Prim "+") AssocLeft,
           op_infix (reservedOp "-") (Prim "-")  AssocLeft]]
     where
