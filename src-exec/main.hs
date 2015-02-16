@@ -8,7 +8,7 @@ import System.IO (hPutStrLn, stderr)
 driverLoop :: TyEnv -> Env -> IO()
 driverLoop tyenv env = do
   str <- getLine
-  case parse str >>= typing tyenv of
+  case parseStmt str >>= typing tyenv of
     Left er -> do
       hPutStrLn stderr er
       driverLoop tyenv env
