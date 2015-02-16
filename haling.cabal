@@ -9,7 +9,9 @@ library
     Hs-source-dirs: src
     Default-Language: Haskell2010
     build-depends: base >= 4 && < 5
-                   , parsec == 3.1.8
+                 , parsec == 3.1.8
+                 , transformers == 0.3.0.0
+                 , hspec == 2.1.4
     exposed-modules:
       Declar
       Eval
@@ -23,7 +25,7 @@ executable main
     Default-Language: Haskell2010
     main-is:  main.hs
     build-depends: base >= 4 && < 5
-                   , haling
+                 , haling
     ghc-options:   -Wall
 
 test-suite spec
@@ -32,6 +34,6 @@ test-suite spec
   hs-source-dirs: test
   main-is: Spec.hs
   build-depends: base >= 4 && < 5
-               , hspec == 1.11.4
+               , hspec == 2.1.4
                , haling
   ghc-options: -Wall

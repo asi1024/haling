@@ -9,7 +9,7 @@ import Declar
 evalStr :: [String] -> String
 evalStr [] = ""
 evalStr str =
-  case mapM parse str of
+  case mapM parseStmt str of
     Left er -> show er
     Right s -> show $ eval_ (foldl decl_ [] $ init s) $ last s
   where decl_ env st = let (r, _, _) = decl env st in r
