@@ -18,4 +18,4 @@ driverLoop tyenv env = do
       driverLoop ntyenv nenv
 
 main :: IO()
-main = driverLoop [("w", TyInt)] [("w", Val 3)]
+main = driverLoop [] []
