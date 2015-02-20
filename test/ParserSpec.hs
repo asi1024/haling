@@ -24,3 +24,6 @@ spec = do
 
     it "should return Decl with let" $ do
       parseStmt "let x = a" `shouldBe` (Right $ Decl "x" (Var "a"))
+
+    it "should return Decl with let" $ do
+      parseStmt "let f x = x + 1" `shouldBe` (Right $ Decl "f" (Fix "f" "x" (Prim "+" (Var "x") (Val 1))))

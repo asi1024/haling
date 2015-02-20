@@ -55,8 +55,18 @@ stmtBody :: Parser Stmt
 stmtBody = liftM Exp expr <|> decl
 
 decl :: Parser Stmt
-decl = do
-  symbol "let"
+decl =  symbol "let" >> (try fix <|> define)
+
+fix :: Parser Stmt
+fix = do
+  name <- identifier
+  arg  <- identifier
+  reservedOp "="
+  e <- expr
+  return $ Decl name (Fix name arg e)
+
+define :: Parser Stmt
+define = do
   name <- identifier
   reservedOp "="
   e <- expr
