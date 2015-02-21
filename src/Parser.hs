@@ -15,7 +15,7 @@ def :: LanguageDef st
 def = emptyDef {
         P.opLetter        = oneOf "+-*=>\\"
       , P.reservedOpNames = ["+", "-", "*", "\\", "->"]
-      , P.reservedNames   = ["let"]
+      , P.reservedNames   = ["let", "import"]
       }
 
 lexer :: P.TokenParser st
@@ -52,7 +52,7 @@ stmt = do
   eof >> return s
 
 stmtBody :: Parser Stmt
-stmtBody = liftM Exp expr <|> decl
+stmtBody = liftM Exp expr <|> decl <|> imp
 
 decl :: Parser Stmt
 decl = do
@@ -64,6 +64,12 @@ decl = do
   return $ Decl name (case arg of
                         "" -> e
                         a  -> Fun a e)
+
+imp :: Parser Stmt
+imp = do
+  _ <- symbol "import"
+  name <- identifier
+  return $ Import name
 
 expr :: Parser Expr
 expr =  lambda

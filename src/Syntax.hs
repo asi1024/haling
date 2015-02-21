@@ -17,6 +17,7 @@ data Expr = Val  Int
 
 data Stmt = Exp Expr
           | Decl String Expr
+          | Import String
           deriving (Eq, Show)
 
 data Ty = TyInt
