@@ -4,11 +4,12 @@ import Syntax
 
 import Data.Maybe (fromJust)
 
-prim :: Num a => String -> a -> a -> a
+prim :: String -> Int -> Int -> Int
 prim s = fromJust $ lookup s [("+", (+)), ("-", (-)), ("*", (*))]
 
 eval :: Env -> Expr -> Exval
-eval _ (Val i) = (ValV i)
+eval _ (Val i)   = (ValV i)
+eval _ (Const _) = undefined
 eval env (Var v) =
     case fromJust $ lookup v env of
       f@(FixV fenv s e) -> eval ((s, f) : fenv) e
