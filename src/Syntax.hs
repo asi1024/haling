@@ -12,7 +12,6 @@ data Expr = Val  Int
           | Var  String
           | Prim String Expr Expr
           | Fun  String Expr
-          | Fix  String String Expr
           | App  Expr Expr
           deriving (Eq)
 
@@ -27,7 +26,7 @@ data Ty = TyInt
 
 data Exval = ValV Int
            | FunV Env String Expr
-           | FixV Env String String Expr
+           | FixV Env String Expr
            deriving (Eq)
 
 instance Show Expr where
@@ -35,7 +34,6 @@ instance Show Expr where
   show (Var s)      = s
   show (Prim f a b) = concat ["(Prim ", f, " ", show a, " ", show b, ")"]
   show (Fun a b)    = concat ["(\\", show a, " -> ", show b, ")"]
-  show (Fix s a b)  = concat ["(Fix ", show s, " \\", show a, " -> ", show b, ")"]
   show (App a b)    = concat ["(App", show a, ", ", show b, ")"]
 
 instance Show Ty where
@@ -45,4 +43,4 @@ instance Show Ty where
 instance Show Exval where
   show (ValV i) = show i
   show (FunV _ _ _) = "<fun>"
-  show (FixV _ _ _ _) = "<fix>"
+  show (FixV _ _ _) = "<fix>"
