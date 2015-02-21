@@ -56,11 +56,14 @@ stmtBody = liftM Exp expr <|> decl
 
 decl :: Parser Stmt
 decl = do
-  symbol "let"
+  _    <- symbol "let"  -- avoid unused-do-bind warning
   name <- identifier
+  arg  <- option "" identifier
   reservedOp "="
   e <- expr
-  return $ Decl name e
+  return $ Decl name (case arg of
+                        "" -> e
+                        a  -> Fun a e)
 
 expr :: Parser Expr
 expr =  lambda
