@@ -1,4 +1,5 @@
 import Declar
+import Environment
 import Parser
 import Syntax
 import Typing
@@ -38,6 +39,6 @@ driverLoop input output tyenv env = do
 main :: IO()
 main = do
   prelude <- importFile "Prelude"
-  (tyenv, env) <- driverLoop prelude stderr [] []
+  (tyenv, env) <- driverLoop prelude stderr [] Environment.empty
   (_, _) <- driverLoop stdin stdout tyenv env
   return()
