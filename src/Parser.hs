@@ -55,22 +55,15 @@ stmtBody :: Parser Stmt
 stmtBody = liftM Exp expr <|> decl
 
 decl :: Parser Stmt
-decl =  symbol "let" >> (try defun <|> define)
-
-defun :: Parser Stmt
-defun = do
+decl = do
+  _    <- symbol "let"  -- avoid unused-do-bind warning
   name <- identifier
-  arg  <- identifier
+  arg  <- option "" identifier
   reservedOp "="
   e <- expr
-  return $ Decl name (Fun arg e)
-
-define :: Parser Stmt
-define = do
-  name <- identifier
-  reservedOp "="
-  e <- expr
-  return $ Decl name e
+  return $ Decl name (case arg of
+                        "" -> e
+                        a  -> Fun a e)
 
 expr :: Parser Expr
 expr =  lambda
