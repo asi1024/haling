@@ -33,7 +33,7 @@ driverLoop input output tyenv env = do
                 driverLoop input output tyenv env )
             _ -> do
               let (nenv, s, e) = decl env st
-              hPutStrLn output $ concat [s, " : ", show t, " = ", show e]
+              hPutStrLn output $ concat [s, " = ", show e, " :: ", show t]
               driverLoop input output ntyenv nenv
 
 main :: IO()

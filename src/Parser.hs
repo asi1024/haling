@@ -15,7 +15,7 @@ def :: LanguageDef st
 def = emptyDef {
         P.opLetter        = oneOf "+-*=>\\"
       , P.reservedOpNames = ["+", "-", "*", "\\", "->"]
-      , P.reservedNames   = ["let", "import"]
+      , P.reservedNames   = ["let", "import", "data"]
       }
 
 lexer :: P.TokenParser st
@@ -52,7 +52,7 @@ stmt = do
   eof >> return s
 
 stmtBody :: Parser Stmt
-stmtBody = liftM Exp expr <|> decl <|> imp
+stmtBody = liftM Exp expr <|> decl <|> imp <|> dataDef
 
 decl :: Parser Stmt
 decl = do
@@ -70,6 +70,14 @@ imp = do
   _ <- symbol "import"
   name <- identifier
   return $ Import name
+
+dataDef :: Parser Stmt
+dataDef = do
+  _    <- symbol "data"
+  name <- identifier
+  reservedOp "="
+  l <- many1 identifier `sepBy` (symbol "|")
+  return $ Data name $ map (\x -> (head x, tail x)) l
 
 expr :: Parser Expr
 expr =  lambda
@@ -103,5 +111,8 @@ appExpr = unitExpr `chainl1` (return App)
 
 unitExpr :: Parser Expr
 unitExpr =  liftM (Val . fromIntegral) natural
-        <|> liftM Var identifier
+        <|> do name <- identifier
+               if isConst name
+                 then return $ Const name
+                 else return $ Var name
         <|> parens expr

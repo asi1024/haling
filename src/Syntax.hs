@@ -1,9 +1,14 @@
 module Syntax where
 
+import Data.Char(isAsciiUpper)
+
 type Check = Either String
 
 err :: String -> Check a
 err s = Left s
+
+isConst :: String -> Bool
+isConst = isAsciiUpper . head
 
 type Env = ([(String, Exval)], [(String, Exval)])
 type TyEnv = [(String, Ty)]
@@ -31,6 +36,7 @@ data Exval = ValV Int
            | DatV String [String]
            | FunV Env String Expr
            | FixV Env String Expr
+           | Undef
            deriving (Eq)
 
 instance Show Expr where
@@ -47,6 +53,7 @@ instance Show Ty where
 
 instance Show Exval where
   show (ValV i) = show i
-  show (DatV a l) = "(" ++ a ++ " " ++ show l ++ ")"
+  show (DatV a l) = a ++ concat (map (\x -> " " ++ x) l)
   show (FunV _ _ _) = "<fun>"
   show (FixV _ _ _) = "<fix>"
+  show (Undef) = "+++"

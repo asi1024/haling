@@ -10,7 +10,10 @@ prim s = fromJust $ lookup s [("+", (+)), ("-", (-)), ("*", (*))]
 
 eval :: Env -> Expr -> Exval
 eval _ (Val i)   = (ValV i)
-eval _ (Const _) = undefined
+eval env (Const c) =
+    case lookupConst c env of
+      f@(FixV fenv s e) -> eval (extendVar (s, f) fenv) e
+      exval             -> exval
 eval env (Var v) =
     case lookupVar v env of
       f@(FixV fenv s e) -> eval (extendVar (s, f) fenv) e
