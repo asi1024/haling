@@ -54,16 +54,19 @@ stmt = do
 stmtBody :: Parser Stmt
 stmtBody = liftM Exp expr <|> decl <|> imp
 
+decomposeMultArgs :: Expr -> [String] -> Expr
+decomposeMultArgs = foldr Fun
+
 decl :: Parser Stmt
 decl = do
-  _    <- symbol "let"  -- avoid unused-do-bind warning
+  _    <- symbol "let"
   name <- identifier
-  arg  <- option "" identifier
+  args <- option [] (many1 identifier)
   reservedOp "="
   e <- expr
-  return $ Decl name (case arg of
-                        "" -> e
-                        a  -> Fun a e)
+  return $ Decl name (case args of
+                        []    -> e
+                        args' -> decomposeMultArgs e args')
 
 imp :: Parser Stmt
 imp = do
@@ -78,10 +81,10 @@ expr =  lambda
 lambda :: Parser Expr
 lambda = do
   reservedOp "\\"
-  arg <- identifier
+  args <- many1 identifier
   reservedOp "->"
   e <- expr
-  return $ Fun arg e
+  return $ decomposeMultArgs e args
 
 prim :: Parser Expr
 prim = buildExpressionParser table appExpr

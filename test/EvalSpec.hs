@@ -40,7 +40,10 @@ spec = do
       evalStr ["(\\x -> x + 33) 22"] `shouldBe` "55"
       evalStr ["(\\x -> (\\y -> x + y)) 19 32"] `shouldBe` "51"
       evalStr ["(\\f -> (\\x -> f x + 23)) (\\x -> x + 7) 100"] `shouldBe` "130"
+      evalStr ["(\\x y -> x + y) 19 32"] `shouldBe` "51"
 
     it "should operate declaration" $ do
       evalStr ["let a = 10", "a + 22"] `shouldBe` "32"
       evalStr ["let i = (\\i -> i)", "(i i) (i 10)"] `shouldBe` "10"
+      evalStr ["let f x   = x + 1", "f 1"] `shouldBe` "2"
+      evalStr ["let f x y = x * y", "let g = f 2", "g 3 + g 4"] `shouldBe` "14"
