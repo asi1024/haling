@@ -3,6 +3,7 @@ import Parser
 import Syntax
 import Typing
 
+import Control.Exception
 import System.IO
 
 importFile :: String -> IO Handle
@@ -21,10 +22,14 @@ driverLoop input output tyenv env = do
           driverLoop input output tyenv env
         Right (ntyenv, t, st) -> do
           case st of
-            Import s -> do
-              ninput <- importFile s
-              (ntyenv_, nenv) <- driverLoop ninput stderr ntyenv env
-              driverLoop input output ntyenv_ nenv
+            Import s -> catch
+              ( do
+                ninput <- importFile s
+                (ntyenv_, nenv) <- driverLoop ninput stderr ntyenv env
+                driverLoop input output ntyenv_ nenv )
+              (\e -> do
+                hPutStrLn stderr ("Warning: Couldn't open " ++ s ++ ": " ++ show (e :: IOException))
+                driverLoop input output tyenv env )
             _ -> do
               let (nenv, s, e) = decl env st
               hPutStrLn output $ concat [s, " : ", show t, " = ", show e]
