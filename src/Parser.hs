@@ -13,8 +13,8 @@ import Syntax
 
 def :: LanguageDef st
 def = emptyDef {
-        P.opLetter        = oneOf "+-*=>\\"
-      , P.reservedOpNames = ["+", "-", "*", "\\", "->"]
+        P.opLetter        = oneOf "+-*=><\\"
+      , P.reservedOpNames = ["+", "-", "*", "\\", "->", "<", "<=", ">", ">=", "=="]
       , P.reservedNames   = ["let", "import", "data", "if", "then", "else"]
       }
 
@@ -104,7 +104,12 @@ table :: [[Operator String () Identity Expr]]
 table = [[op_prefix (reservedOp "-") neg],
          [op_infix (reservedOp "*") (Prim "*") AssocLeft],
          [op_infix (reservedOp "+") (Prim "+") AssocLeft,
-          op_infix (reservedOp "-") (Prim "-")  AssocLeft]]
+          op_infix (reservedOp "-") (Prim "-")  AssocLeft],
+         [op_infix (reservedOp "<") (Comp "<") AssocLeft,
+          op_infix (reservedOp "<=") (Comp "<=") AssocLeft,
+          op_infix (reservedOp ">") (Comp ">") AssocLeft,
+          op_infix (reservedOp ">=") (Comp ">=") AssocLeft,
+          op_infix (reservedOp "==") (Comp "==") AssocLeft]]
     where
       op_prefix s f       = Prefix (s >> return f)
       op_infix  s f assoc = Infix (s >> return f) assoc

@@ -31,6 +31,14 @@ spec = do
       evalStr ["22*13-16"] `shouldBe`  "270"
       evalStr ["22-13*16"] `shouldBe` "-186"
 
+    it "should calculate basic conparison operations" $ do
+      evalStr ["1 <= 3"]       `shouldBe` "True"
+      evalStr ["1 + 4 < 3"]    `shouldBe` "False"
+      evalStr ["1 > 3 - 10"]   `shouldBe` "True"
+      evalStr ["1 >= -4 * 10"] `shouldBe` "True"
+      evalStr ["1 == -4 * 10"] `shouldBe` "False"
+      evalStr ["1 == 1"]       `shouldBe` "True"
+
     it "should return lambda expression" $ do
       evalStr ["\\x -> x"] `shouldBe` "<fun>"
       evalStr ["\\x -> x + 1"] `shouldBe` "<fun>"
@@ -41,7 +49,7 @@ spec = do
       evalStr ["(\\x -> x + 33) 22"] `shouldBe` "55"
       evalStr ["(\\x -> (\\y -> x + y)) 19 32"] `shouldBe` "51"
       evalStr ["(\\f -> (\\x -> f x + 23)) (\\x -> x + 7) 100"] `shouldBe` "130"
-      evalStr ["(\\x y -> x + y) 19 32"] `shouldBe` "51"
+      evalStr ["(\\x y -> x - y) 19 32"] `shouldBe` "-13"
 
     it "should operate declaration" $ do
       evalStr ["let a = 10", "a + 22"] `shouldBe` "32"
@@ -55,3 +63,7 @@ spec = do
                "(\\x -> if True then x - 1 else 2) 39"] `shouldBe` "38"
       evalStr ["data Bool = True | False",
                "let c x = False", "3 - if c 1 then 1 else 20"] `shouldBe` "-17"
+
+    it "should apply recursive function" $ do
+      evalStr ["let fact x = if x <= 0 then 1 else x * fact (x - 1)", "fact 5"] `shouldBe` "120"
+      evalStr ["let sum x y = if x > y then 0 else x + sum (x + 1) y", "sum 3 5"] `shouldBe` "12"
