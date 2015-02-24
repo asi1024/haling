@@ -48,3 +48,10 @@ spec = do
       evalStr ["let i = (\\i -> i)", "(i i) (i 10)"] `shouldBe` "10"
       evalStr ["let f x   = x + 1", "f 1"] `shouldBe` "2"
       evalStr ["let f x y = x * y", "let g = f 2", "g 3 + g 4"] `shouldBe` "14"
+
+    it "should operate if" $ do
+      evalStr ["data Bool = True | False", "if True then 1 else 2"] `shouldBe` "1"
+      evalStr ["data Bool = True | False",
+               "(\\x -> if True then x - 1 else 2) 39"] `shouldBe` "38"
+      evalStr ["data Bool = True | False",
+               "let c x = False", "3 - if c 1 then 1 else 20"] `shouldBe` "-17"

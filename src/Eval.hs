@@ -22,6 +22,11 @@ eval env (Prim f a b) =
   case (eval env a, eval env b) of
     (ValV x, ValV y) -> ValV $ prim f x y
     _ -> error "Eval.eval: Prim"
+eval env (If c t f) =
+    case eval env c of
+      (DatV "True"  []) -> eval env t
+      (DatV "False" []) -> eval env f
+      _                 -> error "Eval.eval: If"
 eval env (Fun a b) = FunV env a b
 eval env (App a b) =
   case eval env a of

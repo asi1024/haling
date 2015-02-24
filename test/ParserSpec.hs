@@ -35,3 +35,9 @@ spec = do
                     `shouldBe` (Right $ Decl "f" (Fun "x" (Prim "+" (Var "x") (Val 1))))
       parseStmt "let f x y = x + y"
                     `shouldBe` (Right $ Decl "f" (Fun "x" (Fun "y" $ Prim "+" (Var "x") (Var "y"))))
+
+    it "should return If with if-stmt" $ do
+      parseStmt "if True then 1 + 1 else 2"
+                    `shouldBe` (Right $ Exp $ If (Const "True") (Prim "+" (Val 1) (Val 1)) (Val 2))
+      parseStmt "\\x -> x - if True then 1 else 2"
+                    `shouldBe` (Right $ Exp $ (Fun "x" (Prim "-" (Var "x") (If (Const "True") (Val 1) (Val 2)))))

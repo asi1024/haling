@@ -15,7 +15,7 @@ def :: LanguageDef st
 def = emptyDef {
         P.opLetter        = oneOf "+-*=>\\"
       , P.reservedOpNames = ["+", "-", "*", "\\", "->"]
-      , P.reservedNames   = ["let", "import", "data"]
+      , P.reservedNames   = ["let", "import", "data", "if", "then", "else"]
       }
 
 lexer :: P.TokenParser st
@@ -118,4 +118,12 @@ unitExpr =  liftM (Val . fromIntegral) natural
                if isConst name
                  then return $ Const name
                  else return $ Var name
+        <|> ifstmt
         <|> parens expr
+
+ifstmt :: Parser Expr
+ifstmt = do
+  cond <- (symbol "if"   >> expr)
+  t    <- (symbol "then" >> expr)
+  f    <- (symbol "else" >> expr)
+  return $ If cond t f
