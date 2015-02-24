@@ -10,16 +10,22 @@ prim s = fromJust $ lookup s [("+", plus), ("-", sub), ("*", mult),
                               ("==", eq), ("<", lt), ("<=", le), (">", gt), (">=", ge)]
 
 plus :: Exval -> Exval -> Exval
-plus (ValV a) (ValV b) = ValV $ a + b
-plus _ _ = error "Eval.Eval.Prim: plus"
+plus val_a val_b =
+    case (val_a, val_b) of
+      (ValV a, ValV b) -> ValV $ a + b
+      _                -> error "Eval.Eval.Prim: plus"
 
 sub :: Exval -> Exval -> Exval
-sub (ValV a) (ValV b) = ValV $ a - b
-sub _ _ = error "Eval.Eval.Prim: sub"
+sub val_a val_b =
+    case (val_a, val_b) of
+      (ValV a, ValV b) -> ValV $ a - b
+      _                -> error "Eval.Eval.Prim: sub"
 
 mult :: Exval -> Exval -> Exval
-mult (ValV a) (ValV b) = ValV $ a * b
-mult _ _ = error "Eval.Eval.Prim: mult"
+mult val_a val_b =
+    case (val_a, val_b) of
+      (ValV a, ValV b) -> ValV $ a * b
+      _                -> error "Eval.Eval.Prim: mult"
 
 primTrue :: Exval
 primTrue = DatV "True" []
@@ -28,24 +34,34 @@ primFalse :: Exval
 primFalse = DatV "False" []
 
 eq :: Exval -> Exval -> Exval
-eq (ValV a) (ValV b) = if a == b then primTrue else primFalse
-eq _ _ = error "Eval.Eval.Prim: eq"
+eq val_a val_b =
+    case (val_a, val_b) of
+      (ValV a, ValV b) -> if a == b then primTrue else primFalse
+      _                -> error "Eval.Eval.Prim: eq"
 
 lt :: Exval -> Exval -> Exval
-lt (ValV a) (ValV b) = if a < b then primTrue else primFalse
-lt _ _ = error "Eval.Eval.Prim: lt"
+lt val_a val_b =
+    case (val_a, val_b) of
+      (ValV a, ValV b) -> if a < b then primTrue else primFalse
+      _                -> error "Eval.Eval.Prim: lt"
 
 le :: Exval -> Exval -> Exval
-le (ValV a) (ValV b) = if a <= b then primTrue else primFalse
-le _ _ = error "Eval.Eval.Prim: le"
+le val_a val_b =
+    case (val_a, val_b) of
+      (ValV a, ValV b) -> if a <= b then primTrue else primFalse
+      _                -> error "Eval.Eval.Prim: le"
 
 gt :: Exval -> Exval -> Exval
-gt (ValV a) (ValV b) = if a > b then primTrue else primFalse
-gt _ _ = error "Eval.Eval.Prim: gt"
+gt val_a val_b =
+    case (val_a, val_b) of
+      (ValV a, ValV b) -> if a > b then primTrue else primFalse
+      _                -> error "Eval.Eval.Prim: gt"
 
 ge :: Exval -> Exval -> Exval
-ge (ValV a) (ValV b) = if a >= b then primTrue else primFalse
-ge _ _ = error "Eval.Eval.Prim: ge"
+ge val_a val_b =
+    case (val_a, val_b) of
+      (ValV a, ValV b) -> if a >= b then primTrue else primFalse
+      _                -> error "Eval.Eval.Prim: ge"
 
 eval :: Env -> Expr -> Exval
 eval _ (Val i)   = (ValV i)
