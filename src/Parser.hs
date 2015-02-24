@@ -105,11 +105,11 @@ table = [[op_prefix (reservedOp "-") neg],
          [op_infix (reservedOp "*") (Prim "*") AssocLeft],
          [op_infix (reservedOp "+") (Prim "+") AssocLeft,
           op_infix (reservedOp "-") (Prim "-")  AssocLeft],
-         [op_infix (reservedOp "<") (Comp "<") AssocLeft,
-          op_infix (reservedOp "<=") (Comp "<=") AssocLeft,
-          op_infix (reservedOp ">") (Comp ">") AssocLeft,
-          op_infix (reservedOp ">=") (Comp ">=") AssocLeft,
-          op_infix (reservedOp "==") (Comp "==") AssocLeft]]
+         [op_infix (reservedOp "<") (Prim "<") AssocLeft,
+          op_infix (reservedOp "<=") (Prim "<=") AssocLeft,
+          op_infix (reservedOp ">") (Prim ">") AssocLeft,
+          op_infix (reservedOp ">=") (Prim ">=") AssocLeft,
+          op_infix (reservedOp "==") (Prim "==") AssocLeft]]
     where
       op_prefix s f       = Prefix (s >> return f)
       op_infix  s f assoc = Infix (s >> return f) assoc
