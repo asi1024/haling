@@ -3,65 +3,20 @@ module Eval(eval) where
 import Environment
 import Syntax
 
-import Data.Maybe (fromJust)
+primBool :: Bool -> Exval
+primBool True  = DatV "True" []
+primBool False = DatV "False" []
 
 prim :: String -> Exval -> Exval -> Exval
-prim s = fromJust $ lookup s [("+", plus), ("-", sub), ("*", mult),
-                              ("==", eq), ("<", lt), ("<=", le), (">", gt), (">=", ge)]
-
-plus :: Exval -> Exval -> Exval
-plus val_a val_b =
-    case (val_a, val_b) of
-      (ValV a, ValV b) -> ValV $ a + b
-      _                -> error "Eval.Eval.Prim: plus"
-
-sub :: Exval -> Exval -> Exval
-sub val_a val_b =
-    case (val_a, val_b) of
-      (ValV a, ValV b) -> ValV $ a - b
-      _                -> error "Eval.Eval.Prim: sub"
-
-mult :: Exval -> Exval -> Exval
-mult val_a val_b =
-    case (val_a, val_b) of
-      (ValV a, ValV b) -> ValV $ a * b
-      _                -> error "Eval.Eval.Prim: mult"
-
-primTrue :: Exval
-primTrue = DatV "True" []
-
-primFalse :: Exval
-primFalse = DatV "False" []
-
-eq :: Exval -> Exval -> Exval
-eq val_a val_b =
-    case (val_a, val_b) of
-      (ValV a, ValV b) -> if a == b then primTrue else primFalse
-      _                -> error "Eval.Eval.Prim: eq"
-
-lt :: Exval -> Exval -> Exval
-lt val_a val_b =
-    case (val_a, val_b) of
-      (ValV a, ValV b) -> if a < b then primTrue else primFalse
-      _                -> error "Eval.Eval.Prim: lt"
-
-le :: Exval -> Exval -> Exval
-le val_a val_b =
-    case (val_a, val_b) of
-      (ValV a, ValV b) -> if a <= b then primTrue else primFalse
-      _                -> error "Eval.Eval.Prim: le"
-
-gt :: Exval -> Exval -> Exval
-gt val_a val_b =
-    case (val_a, val_b) of
-      (ValV a, ValV b) -> if a > b then primTrue else primFalse
-      _                -> error "Eval.Eval.Prim: gt"
-
-ge :: Exval -> Exval -> Exval
-ge val_a val_b =
-    case (val_a, val_b) of
-      (ValV a, ValV b) -> if a >= b then primTrue else primFalse
-      _                -> error "Eval.Eval.Prim: ge"
+prim "+"  (ValV a) (ValV b) = ValV $ a + b
+prim "-"  (ValV a) (ValV b) = ValV $ a - b
+prim "*"  (ValV a) (ValV b) = ValV $ a * b
+prim "==" (ValV a) (ValV b) = primBool $ a == b
+prim "<"  (ValV a) (ValV b) = primBool $ a <  b
+prim "<=" (ValV a) (ValV b) = primBool $ a <= b
+prim ">"  (ValV a) (ValV b) = primBool $ a >  b
+prim ">=" (ValV a) (ValV b) = primBool $ a >= b
+prim _ _ _ = error "Eval.Eval.Prim"
 
 eval :: Env -> Expr -> Exval
 eval _ (Val i)   = (ValV i)
