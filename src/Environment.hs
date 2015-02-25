@@ -13,6 +13,11 @@ extendVar x (a, b) = (a, x : b)
 lookupVar :: String -> Env -> Exval
 lookupVar x (_, b) = fromJust $ lookup x b
 
+onlyConst :: Env -> [(String, [String])] -> Bool
+onlyConst (a, _) l = all (not . (`elem` hasDefined)) newDefined
+    where hasDefined = map fst a
+          newDefined = map fst l
+
 extendConst :: (String, [String]) -> Env -> Env
 extendConst (x, []) (a, b) = ((x, DatV x []) : a, b)
 extendConst _ _ = undefined
