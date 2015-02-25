@@ -3,24 +3,39 @@ module EvalSpec where
 
 import Test.Hspec
 
-import Declar
-import Environment
-import Parser
+import Declar (decl)
+import Environment (empty)
+import Parser (parseStmt)
+import Syntax (Env, Exval)
+
+declStr :: String -> Env -> (Env, String, Exval)
+declStr str env =
+  case parseStmt str of
+    Left er -> error er
+    Right s -> decl env s
+
+decl_ :: Env -> String -> Env
+decl_ env str = let (e, _, _) = declStr str env in e
+
+eval_ :: Env -> String -> String
+eval_ env str = let (_, _, e) = declStr str env in show e
+
+evalStrWithEnv :: Env -> [String] -> String
+evalStrWithEnv env str = eval_ (foldl decl_ env $ init str) $ last str
 
 evalStr :: [String] -> String
-evalStr [] = ""
-evalStr str =
-  case mapM parseStmt str of
-    Left er -> show er
-    Right s -> show $ eval_ (foldl decl_ Environment.empty $ init s) $ last s
-  where decl_ env st = let (r, _, _) = decl env st in r
-        eval_ env st = let (_, _, e) = decl env st in e
+evalStr = evalStrWithEnv empty
+
+evalPrelude :: [String] -> String
+evalPrelude = evalStrWithEnv $ foldl decl_ empty prelude
+
+prelude :: [String]
+prelude = ["data Bool = True | False"]
 
 spec :: Spec
 spec = do
   describe "Eval" $ do
     it "should calculate basic arithmetic operations" $ do
-      evalStr []           `shouldBe`     ""
       evalStr ["23"]       `shouldBe`   "23"
       evalStr ["-12"]      `shouldBe`  "-12"
       evalStr ["13-16"]    `shouldBe`   "-3"
@@ -58,11 +73,9 @@ spec = do
       evalStr ["let f x y = x * y", "let g = f 2", "g 3 + g 4"] `shouldBe` "14"
 
     it "should operate if" $ do
-      evalStr ["data Bool = True | False", "if True then 1 else 2"] `shouldBe` "1"
-      evalStr ["data Bool = True | False",
-               "(\\x -> if True then x - 1 else 2) 39"] `shouldBe` "38"
-      evalStr ["data Bool = True | False",
-               "let c x = False", "3 - if c 1 then 1 else 20"] `shouldBe` "-17"
+      evalPrelude ["if True then 1 else 2"] `shouldBe` "1"
+      evalPrelude ["(\\x -> if True then x - 1 else 2) 39"] `shouldBe` "38"
+      evalPrelude ["let c x = False", "3 - if c 1 then 1 else 20"] `shouldBe` "-17"
 
     it "should apply recursive function" $ do
       evalStr ["let fact x = if x <= 0 then 1 else x * fact (x - 1)", "fact 5"] `shouldBe` "120"
