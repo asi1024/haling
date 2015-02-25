@@ -15,8 +15,14 @@ spec = do
     it "should return (-1) * a with -a" $ do
       parseStmt "-a" `shouldBe` (Right $ Exp $ Prim "*" (Val (-1)) (Var "a"))
 
-    it "should return (- a 1) with a - 1" $ do
-      parseStmt "a - 1" `shouldBe` (Right $ Exp $ Prim "-" (Var "a") (Val 1))
+    it "should return Prim" $ do
+      parseStmt "a - 1 + 3" `shouldBe` (Right $ Exp $ Prim "+" (Prim "-" (Var "a") (Val 1)) (Val 3))
+      parseStmt "1 - 3 * a" `shouldBe` (Right $ Exp $ Prim "-" (Val 1) (Prim "*" (Val 3) (Var "a")))
+
+    it "should return Comp" $ do
+      parseStmt "1 < 2"           `shouldBe` (Right $ Exp $ Prim "<" (Val 1) (Val 2))
+      parseStmt "1 <= 3 + a"      `shouldBe` (Right $ Exp $ Prim "<=" (Val 1) (Prim "+" (Val 3) (Var "a")))
+      parseStmt "\\x y -> x == y" `shouldBe` (Right $ Exp $ Fun "x" $ Fun "y" $ Prim "==" (Var "x") (Var "y"))
 
     it "should return Fun with lambda expr" $ do
       parseStmt "\\x -> x" `shouldBe` (Right $ Exp $ Fun "x" (Var "x"))
@@ -35,3 +41,11 @@ spec = do
                     `shouldBe` (Right $ Decl "f" (Fun "x" (Prim "+" (Var "x") (Val 1))))
       parseStmt "let f x y = x + y"
                     `shouldBe` (Right $ Decl "f" (Fun "x" (Fun "y" $ Prim "+" (Var "x") (Var "y"))))
+
+    it "should return If with if-stmt" $ do
+      parseStmt "if True then 1 + 1 else 2"
+                    `shouldBe` (Right $ Exp $ If (Const "True") (Prim "+" (Val 1) (Val 1)) (Val 2))
+      parseStmt "\\x -> x - if True then 1 else 2"
+                    `shouldBe` (Right $ Exp $ (Fun "x" (Prim "-" (Var "x") (If (Const "True") (Val 1) (Val 2)))))
+      parseStmt "if x > 10 then 1 else 0"
+                    `shouldBe` (Right $ Exp $ If (Prim ">" (Var "x") (Val 10)) (Val 1) (Val 0))

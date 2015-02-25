@@ -13,9 +13,9 @@ import Syntax
 
 def :: LanguageDef st
 def = emptyDef {
-        P.opLetter        = oneOf "+-*=>\\"
-      , P.reservedOpNames = ["+", "-", "*", "\\", "->"]
-      , P.reservedNames   = ["let", "import", "data"]
+        P.opLetter        = oneOf "+-*=><\\"
+      , P.reservedOpNames = ["+", "-", "*", "\\", "->", "<", "<=", ">", ">=", "=="]
+      , P.reservedNames   = ["let", "import", "data", "if", "then", "else"]
       }
 
 lexer :: P.TokenParser st
@@ -104,7 +104,12 @@ table :: [[Operator String () Identity Expr]]
 table = [[op_prefix (reservedOp "-") neg],
          [op_infix (reservedOp "*") (Prim "*") AssocLeft],
          [op_infix (reservedOp "+") (Prim "+") AssocLeft,
-          op_infix (reservedOp "-") (Prim "-")  AssocLeft]]
+          op_infix (reservedOp "-") (Prim "-")  AssocLeft],
+         [op_infix (reservedOp "<") (Prim "<") AssocLeft,
+          op_infix (reservedOp "<=") (Prim "<=") AssocLeft,
+          op_infix (reservedOp ">") (Prim ">") AssocLeft,
+          op_infix (reservedOp ">=") (Prim ">=") AssocLeft,
+          op_infix (reservedOp "==") (Prim "==") AssocLeft]]
     where
       op_prefix s f       = Prefix (s >> return f)
       op_infix  s f assoc = Infix (s >> return f) assoc
@@ -118,4 +123,12 @@ unitExpr =  liftM (Val . fromIntegral) natural
                if isConst name
                  then return $ Const name
                  else return $ Var name
+        <|> ifstmt
         <|> parens expr
+
+ifstmt :: Parser Expr
+ifstmt = do
+  cond <- (symbol "if"   >> expr)
+  t    <- (symbol "then" >> expr)
+  f    <- (symbol "else" >> expr)
+  return $ If cond t f
