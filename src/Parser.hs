@@ -13,8 +13,9 @@ import Syntax
 
 def :: LanguageDef st
 def = emptyDef {
-        P.opLetter        = oneOf "+-*=><\\"
-      , P.reservedOpNames = ["+", "-", "*", "\\", "->", "<", "<=", ">", ">=", "=="]
+        P.opLetter        = oneOf "+-*=><\\`"
+      , P.reservedOpNames = ["+", "-", "*", "\\", "->", "<", "<=", ">", ">=", "==",
+                             "`"]
       , P.reservedNames   = ["let", "import", "data", "if", "then", "else"]
       }
 
@@ -95,7 +96,7 @@ lambda = do
   return $ decomposeMultArgs e args
 
 prim :: Parser Expr
-prim = buildExpressionParser table appExpr
+prim = buildExpressionParser table infixAppExpr
 
 neg :: Expr -> Expr
 neg = Prim "*" (Val (-1))
@@ -113,6 +114,14 @@ table = [[op_prefix (reservedOp "-") neg],
     where
       op_prefix s f       = Prefix (s >> return f)
       op_infix  s f assoc = Infix (s >> return f) assoc
+
+infixAppExpr :: Parser Expr
+infixAppExpr = appExpr `chainl1` infixFunc
+
+infixFunc :: Parser (Expr -> Expr -> Expr)
+infixFunc = do
+  f <- between (reservedOp "`") (reservedOp "`") identifier
+  return $ (\a b -> App (App (Var f) a) b)
 
 appExpr :: Parser Expr
 appExpr = unitExpr `chainl1` (return App)

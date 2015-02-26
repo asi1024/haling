@@ -49,3 +49,11 @@ spec = do
                     `shouldBe` (Right $ Exp $ (Fun "x" (Prim "-" (Var "x") (If (Const "True") (Val 1) (Val 2)))))
       parseStmt "if x > 10 then 1 else 0"
                     `shouldBe` (Right $ Exp $ If (Prim ">" (Var "x") (Val 10)) (Val 1) (Val 0))
+
+    it "should parse infix function" $ do
+      parseStmt "1 * 1 `f` 1 - 1"
+                    `shouldBe` (Right $ Exp $ Prim "-" (Prim "*" (Val 1) (App (App (Var "f") (Val 1)) (Val 1))) (Val 1))
+      parseStmt "l `f` g r"
+                    `shouldBe` (Right $ Exp $ App (App (Var "f") (Var "l")) (App (Var "g") (Var "r")))
+      parseStmt "if f then t else 1 `f` a"
+                    `shouldBe` (Right $ Exp $ If (Var "f") (Var "t") (App (App (Var "f") (Val 1)) (Var "a")))

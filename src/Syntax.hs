@@ -48,7 +48,7 @@ instance Show Expr where
   show (Prim f a b) = concat ["(Prim ", f, " ", show a, " ", show b, ")"]
   show (If c t f)   = concat ["(If ", show c, " then ", show t, " else ", show f, ")"]
   show (Fun a b)    = concat ["(\\", show a, " -> ", show b, ")"]
-  show (App a b)    = concat ["(App", show a, ", ", show b, ")"]
+  show (App a b)    = concat ["(App ", show a, ", ", show b, ")"]
 
 instance Show Ty where
   show TyInt = "Int"

@@ -80,3 +80,7 @@ spec = do
     it "should apply recursive function" $ do
       evalStr ["let fact x = if x <= 0 then 1 else x * fact (x - 1)", "fact 5"] `shouldBe` "120"
       evalStr ["let sum x y = if x > y then 0 else x + sum (x + 1) y", "sum 3 5"] `shouldBe` "12"
+
+    it "should caluculate infix function" $ do
+      evalStr ["let f x y = x - y", "f 10 5 `f` 3"] `shouldBe` "2"
+      evalStr ["let f x y = x - y", "10 `f` 5 `f` 3"] `shouldBe` "2"
