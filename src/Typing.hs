@@ -8,15 +8,26 @@ import Control.Monad.State
 
 type Subst = [(Int, Ty)]
 
+tyInt :: Ty
+tyInt = TyConst "Int"
+
+tyBool :: Ty
+tyBool = TyConst "Bool"
+
 typing :: TyEnv -> Stmt -> TyState -> (TyState, (TyEnv, Ty))
 typing tyenv (Exp e) tystate = (ntystate, (tyenv, ty))
   where ((_, ty), ntystate) = runState (tyExp tyenv e) tystate
 typing tyenv (Decl _ _) tystate = (tystate, (tyenv, Undefty))
-typing tyenv (Data _ _) tystate = (tystate, (tyenv, Undefty))
+typing tyenv (Data s l) tystate =
+  if isConst s && all (\(x, y) -> isConst x && all isOK y) l
+    then (tystate, (map makeTy l ++ tyenv, TyConst s))
+    else error "Not a data constructor"
+  where isOK x = isConst x && elem x (map fst tyenv)
+        makeTy (x, y) = (x, foldr (\z -> TyFun $ TyConst z) (TyConst s) y)
 typing tyenv (Import _) tystate = (tystate, (tyenv, Undefty))
 
 tyExp :: TyEnv -> Expr -> State TyState (Subst, Ty)
-tyExp _     (Val _)      = return ([], TyInt)
+tyExp _     (Val _)      = return ([], tyInt)
 tyExp tyenv (Const s)    = return ([], lookupTy s tyenv)
 tyExp tyenv (Var s)      = return ([], lookupTy s tyenv)
 tyExp tyenv (Prim s a b) = do
@@ -30,7 +41,7 @@ tyExp tyenv (If a b c) = do
   (s2, ty2) <- tyExp tyenv b
   (s3, ty3) <- tyExp tyenv c
   let s4 = unify $ eqsOfSubst s1 ++ eqsOfSubst s2 ++ eqsOfSubst s3
-                ++ [(ty1, Undefty), (ty2, ty3)]
+                ++ [(ty1, tyBool), (ty2, ty3)]
   return (s4, substType s4 ty2)
 tyExp tyenv (Fun a b) = do
   domty   <- liftM TyVar freshTyvar
@@ -44,18 +55,18 @@ tyExp tyenv (App a b) = do
   return (s3, substType s3 ty)
 
 tyPrim :: String -> Ty -> Ty -> ([(Ty, Ty)], Ty)
-tyPrim "+"  ty1 ty2 = ([(ty1, TyInt), (ty2, TyInt)], TyInt)
-tyPrim "-"  ty1 ty2 = ([(ty1, TyInt), (ty2, TyInt)], TyInt)
-tyPrim "*"  ty1 ty2 = ([(ty1, TyInt), (ty2, TyInt)], TyInt)
-tyPrim "==" ty1 ty2 = ([(ty1, TyInt), (ty2, TyInt)], Undefty)
-tyPrim "<"  ty1 ty2 = ([(ty1, TyInt), (ty2, TyInt)], Undefty)
-tyPrim ">"  ty1 ty2 = ([(ty1, TyInt), (ty2, TyInt)], Undefty)
-tyPrim "<=" ty1 ty2 = ([(ty1, TyInt), (ty2, TyInt)], Undefty)
-tyPrim ">=" ty1 ty2 = ([(ty1, TyInt), (ty2, TyInt)], Undefty)
+tyPrim "+"  ty1 ty2 = ([(ty1, tyInt), (ty2, tyInt)], tyInt)
+tyPrim "-"  ty1 ty2 = ([(ty1, tyInt), (ty2, tyInt)], tyInt)
+tyPrim "*"  ty1 ty2 = ([(ty1, tyInt), (ty2, tyInt)], tyInt)
+tyPrim "==" ty1 ty2 = ([(ty1, tyInt), (ty2, tyInt)], tyBool)
+tyPrim "<"  ty1 ty2 = ([(ty1, tyInt), (ty2, tyInt)], tyBool)
+tyPrim ">"  ty1 ty2 = ([(ty1, tyInt), (ty2, tyInt)], tyBool)
+tyPrim "<=" ty1 ty2 = ([(ty1, tyInt), (ty2, tyInt)], tyBool)
+tyPrim ">=" ty1 ty2 = ([(ty1, tyInt), (ty2, tyInt)], tyBool)
 tyPrim _ _ _ = ([], Undefty)
 
 substType :: Subst -> Ty -> Ty
-substType _ TyInt = TyInt
+substType _ (TyConst a)   = (TyConst a)
 substType subst (TyVar a) =
   case subst of
     []         -> TyVar a

@@ -6,9 +6,6 @@ import Data.Maybe (fromJust)
 
 type Check = Either String
 
-err :: String -> Check a
-err s = Left s
-
 isConst :: String -> Bool
 isConst = isAsciiUpper . head
 
@@ -31,7 +28,7 @@ data Stmt = Exp Expr
           | Import String
           deriving (Eq, Show)
 
-data Ty = TyInt
+data Ty = TyConst String
         | TyVar Int
         | TyFun Ty Ty
         | Undefty
@@ -57,13 +54,13 @@ instance Show Ty where
   show a = showTy (zip (freevarTy a) ['a'..]) a
 
 freevarTy :: Ty -> [Int]
-freevarTy TyInt       = []
+freevarTy (TyConst _) = []
 freevarTy (TyVar i)   = [i]
 freevarTy (TyFun a b) = freevarTy a `union` freevarTy b
 freevarTy Undefty     = []
 
 showTy :: [(Int, Char)] -> Ty -> String
-showTy _ TyInt       = "Int"
+showTy _ (TyConst t) = t
 showTy f (TyVar i)   = [fromJust $ lookup i f]
 showTy f (TyFun a@(TyFun _ _) b) = "(" ++ showTy f a ++ ") -> " ++ showTy f b
 showTy f (TyFun a b) = showTy f a ++ " -> " ++ showTy f b
