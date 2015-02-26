@@ -57,3 +57,5 @@ spec = do
                     `shouldBe` (Right $ Exp $ App (App (Var "f") (Var "l")) (App (Var "g") (Var "r")))
       parseStmt "if f then t else 1 `f` a"
                     `shouldBe` (Right $ Exp $ If (Var "f") (Var "t") (App (App (Var "f") (Val 1)) (Var "a")))
+      parseStmt "let x `f` y = 1"
+                    `shouldBe` (Right $ Decl "f" (Fun "x" (Fun "y" (Val 1))))
