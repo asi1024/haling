@@ -12,6 +12,7 @@ isConst = isAsciiUpper . head
 
 type Env = ([(String, Exval)], [(String, Exval)])
 type TyEnv = [(String, Ty)]
+type TyState = Int
 
 data Expr = Val   Int
           | Const String

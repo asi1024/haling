@@ -10,35 +10,37 @@ import System.IO
 importFile :: String -> IO Handle
 importFile s = openFile ("lib/" ++ s ++ ".hs") ReadMode
 
-driverLoop :: Handle -> Handle -> TyEnv -> Env -> IO (TyEnv, Env)
-driverLoop input output tyenv env = do
+driverLoop :: Handle -> Handle
+           -> TyState -> TyEnv -> Env
+           -> IO (TyState, TyEnv, Env)
+driverLoop input output tystate tyenv env = do
   eof <- hIsEOF input
   if eof
-    then return (tyenv, env)
-    else do
+    then return (tystate, tyenv, env)
+    else catch ( do
       str <- hGetLine input
-      case parseStmt str >>= typing tyenv of
+      case parseStmt str of
         Left er -> do
           hPutStrLn stderr er
-          driverLoop input output tyenv env
-        Right (ntyenv, t, st) -> do
+          driverLoop input output tystate tyenv env
+        Right st -> do
+          let (ntystate, (ntyenv, t)) = typing tyenv st tystate
           case st of
-            Import s -> catch
-              ( do
-                ninput <- importFile s
-                (ntyenv_, nenv) <- driverLoop ninput stderr ntyenv env
-                driverLoop input output ntyenv_ nenv )
-              (\e -> do
-                hPutStrLn stderr ("Warning: Couldn't open " ++ s ++ ": " ++ show (e :: IOException))
-                driverLoop input output tyenv env )
+            Import s -> do
+              ninput <- importFile s
+              (a, b, c) <- driverLoop ninput stderr ntystate ntyenv env
+              driverLoop input output a b c
             _ -> do
               let (nenv, s, e) = decl env st
               hPutStrLn output $ concat [s, " = ", show e, " :: ", show t]
-              driverLoop input output ntyenv nenv
+              driverLoop input output ntystate ntyenv nenv )
+     (\e -> do
+         hPutStrLn stderr ("Error: " ++ show (e :: IOException))
+         driverLoop input output tystate tyenv env)
 
 main :: IO()
 main = do
   prelude <- importFile "Prelude"
-  (tyenv, env) <- driverLoop prelude stderr [] Environment.empty
-  (_, _) <- driverLoop stdin stdout tyenv env
+  (tystate, tyenv, env) <- driverLoop prelude stderr 0 [] Environment.empty
+  (_, _, _) <- driverLoop stdin stdout tystate tyenv env
   return()
