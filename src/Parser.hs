@@ -123,7 +123,7 @@ unitExpr =  liftM (Val . fromIntegral) natural
                if isConst name
                  then return $ Const name
                  else return $ Var name
-        <|> ifstmt
+        <|> try ifstmt
         <|> parens expr
 
 ifstmt :: Parser Expr
