@@ -65,16 +65,16 @@ decl = do
   reservedOp "="
   e <- expr
   return $ Decl name (case args of
-                        []    -> e
-                        args' -> decomposeMultArgs e args')
+                        Just a  -> decomposeMultArgs e a
+                        Nothing -> e)
 
-declNames :: Parser (String, [String])
+declNames :: Parser (String, Maybe [String])
 declNames =  try (do lop <- identifier
-                     f <- between (reservedOp "`") (reservedOp "`") identifier
+                     f   <- infixFunc
                      rop <- identifier
-                     return $ (f, [lop, rop]))
+                     return $ (f, Just [lop, rop]))
          <|> (do name <- identifier
-                 args <- option [] (many1 identifier)
+                 args <- optionMaybe $ many1 identifier
                  return (name, args))
 
 imp :: Parser Stmt
@@ -124,12 +124,15 @@ table = [[op_prefix (reservedOp "-") neg],
       op_infix  s f assoc = Infix (s >> return f) assoc
 
 infixAppExpr :: Parser Expr
-infixAppExpr = appExpr `chainl1` infixFunc
+infixAppExpr = appExpr `chainl1` infixFuncApp
 
-infixFunc :: Parser (Expr -> Expr -> Expr)
-infixFunc = do
-  f <- between (reservedOp "`") (reservedOp "`") identifier
+infixFuncApp :: Parser (Expr -> Expr -> Expr)
+infixFuncApp = do
+  f <- infixFunc
   return $ (\a b -> App (App (Var f) a) b)
+
+infixFunc :: Parser String
+infixFunc = between (reservedOp "`") (reservedOp "`") identifier
 
 appExpr :: Parser Expr
 appExpr = unitExpr `chainl1` (return App)
@@ -141,7 +144,7 @@ unitExpr =  liftM (Val . fromIntegral) natural
                  then return $ Const name
                  else return $ Var name
         <|> try ifstmt
-        <|> parens expr
+        <|> parens enclosedExpr
 
 ifstmt :: Parser Expr
 ifstmt = do
@@ -149,3 +152,30 @@ ifstmt = do
   t    <- (symbol "then" >> expr)
   f    <- (symbol "else" >> expr)
   return $ If cond t f
+
+enclosedExpr :: Parser Expr
+enclosedExpr =  try expr
+            <|> try incompOp
+            <|> incompInfix
+
+incompOp :: Parser Expr
+incompOp = do
+  lop <- optionMaybe infixAppExpr
+  op  <- arithOp
+  rop <- optionMaybe infixAppExpr
+  return $ case (lop, rop) of
+             (Just l, Nothing)  -> Fun "y" $ Prim op l (Var "y")
+             (Nothing, Just r)  -> Fun "x" $ Prim op (Var "x") r
+             (Nothing, Nothing) -> Fun "x" (Fun "y" $ Prim op (Var "x") (Var "y"))
+             (_, _)             -> undefined
+
+arithOp :: Parser String
+arithOp = choice $ map symbol ["+", "-", "*"]
+
+incompInfix :: Parser Expr
+incompInfix =  try (do lop <- appExpr
+                       f   <- infixFunc
+                       return $ App (Var f) lop)
+           <|> do f   <- infixFunc
+                  rop <- appExpr
+                  return $ Fun "x" $ App (App (Var f) (Var "x")) rop

@@ -59,3 +59,8 @@ spec = do
                     `shouldBe` (Right $ Exp $ If (Var "f") (Var "t") (App (App (Var "f") (Val 1)) (Var "a")))
       parseStmt "let x `f` y = 1"
                     `shouldBe` (Right $ Decl "f" (Fun "x" (Fun "y" (Val 1))))
+
+    it "should parse partial applying of infix operator and function" $ do
+      parseStmt "(+)" `shouldBe` (Right $ Exp $ Fun "x" (Fun "y" $ Prim "+" (Var "x") (Var "y")))
+      parseStmt "(+ f a)" `shouldBe` (Right $ Exp $ Fun "x" $ Prim "+" (Var "x") (App (Var "f") (Var "a")))
+      parseStmt "(1 `f` a -)" `shouldBe` (Right $ Exp $ Fun "y" $ Prim "-" (App (App (Var "f") (Val 1)) (Var "a")) (Var "y"))

@@ -80,4 +80,9 @@ spec = do
     it "should caluculate infix function" $ do
       evalStr ["let f x y = x - y", "f 10 5 `f` 3"] `shouldBe` "2"
       evalStr ["let f x y = x - y", "10 `f` 5 `f` 3"] `shouldBe` "2"
+      evalStr ["let f x y = x - y", "(1 `f`) 4"] `shouldBe` "-3"
+      evalStr ["let f x y = x - y", "let g = (`f` 2)", "g 4"] `shouldBe` "2"
+      evalStr ["let f = (-)", "f 1 3"] `shouldBe` "-2"
+      evalStr ["(+ 1) 3"] `shouldBe` "4"
+      evalStr ["(4 -) 3"] `shouldBe` "1"
       evalStr ["let x `f` y = x - y", "10 `f` 5 `f` 3"] `shouldBe` "2"
