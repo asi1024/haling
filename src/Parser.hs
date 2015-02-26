@@ -61,13 +61,21 @@ decomposeMultArgs = foldr Fun
 decl :: Parser Stmt
 decl = do
   _    <- symbol "let"
-  name <- identifier
-  args <- option [] (many1 identifier)
+  (name, args) <- declNames
   reservedOp "="
   e <- expr
   return $ Decl name (case args of
                         []    -> e
                         args' -> decomposeMultArgs e args')
+
+declNames :: Parser (String, [String])
+declNames =  try (do lop <- identifier
+                     f <- between (reservedOp "`") (reservedOp "`") identifier
+                     rop <- identifier
+                     return $ (f, [lop, rop]))
+         <|> (do name <- identifier
+                 args <- option [] (many1 identifier)
+                 return (name, args))
 
 imp :: Parser Stmt
 imp = do
