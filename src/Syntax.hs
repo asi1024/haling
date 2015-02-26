@@ -32,6 +32,7 @@ data Stmt = Exp Expr
 data Ty = TyInt
         | TyVar Int
         | TyFun Ty Ty
+        | Undefty
         deriving (Eq)
 
 data Exval = ValV Int
