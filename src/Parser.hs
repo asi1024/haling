@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
-module Parser(parseStmt) where
+module Parser(parseStmt, opExpr, opApp) where
 
 import           Text.Parsec
 import           Text.Parsec.String
@@ -12,13 +12,19 @@ import Data.Functor.Identity(Identity)
 import Syntax
 
 def :: LanguageDef st
-def = haskellDef
+def = haskellDef { P.reservedOpNames = primOpers ++ (P.reservedOpNames haskellDef) }
+
+primOpers :: [String]
+primOpers = ["+", "-", "*", "==", "<=", "<", ">=", ">"]
 
 lexer :: P.TokenParser st
 lexer = P.makeTokenParser def
 
 operator :: Parser String
 operator = P.operator lexer
+
+anyOperator :: Parser String
+anyOperator = choice $ operator:(map symbol primOpers)
 
 identifier :: Parser String
 identifier = P.identifier lexer
@@ -63,18 +69,18 @@ decl = do
   reservedOp "="
   e <- expr
   return $ Decl name (case args of
-                        Just a  -> decomposeMultArgs e a
-                        Nothing -> e)
+                        [] -> e
+                        l  -> decomposeMultArgs e l)
 
-declNames :: Parser (String, Maybe [String])
-declNames =  (do op <- between (symbol "(") (symbol ")") operator
-                 return $ (op, Nothing))
+declNames :: Parser (String, [String])
+declNames =  (do op <- between (symbol "(") (symbol ")") anyOperator
+                 return $ (op, []))
          <|> try (do lop <- identifier
-                     f   <- choice [infixFunc, operator]
+                     f   <- choice [infixFunc, anyOperator]
                      rop <- identifier
-                     return $ (f, Just [lop, rop]))
+                     return $ (f, [lop, rop]))
          <|> (do name <- identifier
-                 args <- optionMaybe $ many1 identifier
+                 args <- option [] (many1 identifier)
                  return (name, args))
 
 imp :: Parser Stmt
@@ -106,25 +112,33 @@ lambda = do
 prim :: Parser Expr
 prim = buildExpressionParser table infixAppExpr
 
+opExpr :: String -> Expr
+opExpr op = if op `elem` primOpers
+            then Fun "x" (Fun "y" $ Prim op (Var "x") (Var "y"))
+            else Fun "x" (Fun "y" $ App (App (Var op) (Var "x")) (Var "y"))
+
+opApp :: String -> Expr -> Expr -> Expr
+opApp op l r = App (App (opExpr op) l) r
+
 neg :: Expr -> Expr
-neg = Prim "*" (Val (-1))
+neg = opApp "*" (Val $ -1)
 
 table :: [[Operator String () Identity Expr]]
-table = [[op_prefix (reservedOp "-") neg],
-         [op_infix (reservedOp "*") (Prim "*") AssocLeft],
-         [op_infix (reservedOp "+") (Prim "+") AssocLeft,
-          op_infix (reservedOp "-") (Prim "-")  AssocLeft],
-         [op_infix (reservedOp "<") (Prim "<") AssocLeft,
-          op_infix (reservedOp "<=") (Prim "<=") AssocLeft,
-          op_infix (reservedOp ">") (Prim ">") AssocLeft,
-          op_infix (reservedOp ">=") (Prim ">=") AssocLeft,
-          op_infix (reservedOp "==") (Prim "==") AssocLeft],
-         [special_infix AssocLeft]]
+table = [[special_infix AssocLeft],
+         [op_prefix (reservedOp "-") neg],
+         [op_infix (reservedOp "*") (opApp "*") AssocLeft],
+         [op_infix (reservedOp "+") (opApp "+") AssocLeft,
+          op_infix (reservedOp "-") (opApp "-")  AssocLeft],
+         [op_infix (reservedOp "<") (opApp "<") AssocLeft,
+          op_infix (reservedOp "<=") (opApp "<=") AssocLeft,
+          op_infix (reservedOp ">") (opApp ">") AssocLeft,
+          op_infix (reservedOp ">=") (opApp ">=") AssocLeft,
+          op_infix (reservedOp "==") (opApp "==") AssocLeft]]
     where
       op_prefix s f       = Prefix (s >> return f)
       op_infix  s f assoc = Infix (s >> return f) assoc
       special_infix assoc = Infix (do op <- operator
-                                      return $ Prim op) assoc
+                                      return $ opApp op) assoc
 
 infixAppExpr :: Parser Expr
 infixAppExpr = appExpr `chainl1` infixFuncApp
@@ -164,12 +178,12 @@ enclosedExpr =  try expr
 incompOp :: Parser Expr
 incompOp = do
   lop <- optionMaybe infixAppExpr
-  op  <- operator
+  op  <- anyOperator
   rop <- optionMaybe infixAppExpr
   return $ case (lop, rop) of
-             (Just l, Nothing)  -> Fun "y" $ Prim op l (Var "y")
-             (Nothing, Just r)  -> Fun "x" $ Prim op (Var "x") r
-             (Nothing, Nothing) -> Fun "x" (Fun "y" $ Prim op (Var "x") (Var "y"))
+             (Just l, Nothing)  -> App (opExpr op) l
+             (Nothing, Just r)  -> Fun "x" $ opApp op (Var "x") r
+             (Nothing, Nothing) -> opExpr op
              (_, _)             -> undefined
 
 incompInfix :: Parser Expr
