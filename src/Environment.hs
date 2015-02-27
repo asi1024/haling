@@ -13,6 +13,12 @@ extendVar x (a, b) = (a, x : b)
 lookupVar :: String -> Env -> Exval
 lookupVar x (_, b) = fromJust $ lookup x b
 
+existVar :: String -> Env -> Bool
+existVar x (_, b) =
+    case lookup x b of Just _  -> True
+                       Nothing -> False
+
+
 onlyConst :: Env -> [(String, [String])] -> Bool
 onlyConst (a, _) l = all (not . (`elem` hasDefined)) newDefined
     where hasDefined = map fst a

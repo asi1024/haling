@@ -12,15 +12,13 @@ import Data.Functor.Identity(Identity)
 import Syntax
 
 def :: LanguageDef st
-def = emptyDef {
-        P.opLetter        = oneOf "+-*=><\\`"
-      , P.reservedOpNames = ["+", "-", "*", "\\", "->", "<", "<=", ">", ">=", "==",
-                             "`"]
-      , P.reservedNames   = ["let", "import", "data", "if", "then", "else"]
-      }
+def = haskellDef
 
 lexer :: P.TokenParser st
 lexer = P.makeTokenParser def
+
+operator :: Parser String
+operator = P.operator lexer
 
 identifier :: Parser String
 identifier = P.identifier lexer
@@ -69,8 +67,10 @@ decl = do
                         Nothing -> e)
 
 declNames :: Parser (String, Maybe [String])
-declNames =  try (do lop <- identifier
-                     f   <- infixFunc
+declNames =  (do op <- between (symbol "(") (symbol ")") operator
+                 return $ (op, Nothing))
+         <|> try (do lop <- identifier
+                     f   <- choice [infixFunc, operator]
                      rop <- identifier
                      return $ (f, Just [lop, rop]))
          <|> (do name <- identifier
@@ -118,10 +118,13 @@ table = [[op_prefix (reservedOp "-") neg],
           op_infix (reservedOp "<=") (Prim "<=") AssocLeft,
           op_infix (reservedOp ">") (Prim ">") AssocLeft,
           op_infix (reservedOp ">=") (Prim ">=") AssocLeft,
-          op_infix (reservedOp "==") (Prim "==") AssocLeft]]
+          op_infix (reservedOp "==") (Prim "==") AssocLeft],
+         [special_infix AssocLeft]]
     where
       op_prefix s f       = Prefix (s >> return f)
       op_infix  s f assoc = Infix (s >> return f) assoc
+      special_infix assoc = Infix (do op <- operator
+                                      return $ Prim op) assoc
 
 infixAppExpr :: Parser Expr
 infixAppExpr = appExpr `chainl1` infixFuncApp
@@ -161,16 +164,13 @@ enclosedExpr =  try expr
 incompOp :: Parser Expr
 incompOp = do
   lop <- optionMaybe infixAppExpr
-  op  <- arithOp
+  op  <- operator
   rop <- optionMaybe infixAppExpr
   return $ case (lop, rop) of
              (Just l, Nothing)  -> Fun "y" $ Prim op l (Var "y")
              (Nothing, Just r)  -> Fun "x" $ Prim op (Var "x") r
              (Nothing, Nothing) -> Fun "x" (Fun "y" $ Prim op (Var "x") (Var "y"))
              (_, _)             -> undefined
-
-arithOp :: Parser String
-arithOp = choice $ map symbol ["+", "-", "*"]
 
 incompInfix :: Parser Expr
 incompInfix =  try (do lop <- appExpr

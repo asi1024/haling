@@ -28,7 +28,10 @@ eval env (Var v) =
     case lookupVar v env of
       f@(FixV fenv s e) -> eval (extendVar (s, f) fenv) e
       exval             -> exval
-eval env (Prim f a b) = prim f (eval env a) (eval env b)
+eval env (Prim f a b) =
+    if existVar f env
+    then eval env (App (App (Var f) a) b)
+    else prim f (eval env a) (eval env b)
 eval env (If c t f) =
     case eval env c of
       (DatV "True"  []) -> eval env t
