@@ -86,3 +86,5 @@ spec = do
       evalStr ["(+ 1) 3"] `shouldBe` "4"
       evalStr ["(4 -) 3"] `shouldBe` "1"
       evalStr ["let x `f` y = x - y", "10 `f` 5 `f` 3"] `shouldBe` "2"
+      evalStr ["let a &= b = a + b", "1 * 2 &= 1"] `shouldBe` "3"
+      evalStr ["let (&=) = (+)", "1 * 2 &= 1"] `shouldBe` "3"
