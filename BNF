@@ -1,0 +1,48 @@
+
+<stmt>         ::= ' '* <stmtBody> '\EOF'
+
+<stmtBody>     ::= <decl>
+                 | <imp>
+                 | <dataDef>
+                 | <expr>
+
+<decl>         ::= "let" <declNames> "=" <expr>
+
+<declNames>    ::= "(" <anyOperator> ")"
+                | <identifier> (<infixFunc> | <anyOperator>) <identifier>
+                | <identifier> <identifier>*
+
+<imp>          ::= "import" <identifier>
+
+<dataDef>      ::= "data" <identifier> = <identifier>+ ("|" <identifier>+)*
+
+
+
+<expr>         ::= <lambda> | <prim>
+
+<lambda>       ::= "\" <identifier>+ "->" <expr>
+
+<prim>         ::= buildExpressionParser <infixAppExpr>
+
+<infixAppExpr> ::= <appExpr> (<infixFunc> <appExpr>)*
+
+<appExpr>      ::= <unitExpr>+
+
+<unitExpr>     ::= <natural>
+                 | <identifier>
+                 | <ifstmt>
+                 | "(" <enclosedExpr> ")"
+
+<ifstmt>       ::= "if" <expr> "then" <expr> "else" <expr>
+
+<enclosedExpr> ::= <expr>
+                 | <imcompOp>
+                 | <incompInfix>
+
+<imcompOp>     ::= <appExpr>
+                 | <infixAppExpr>opt <anyOperator> <infixAppExpr>opt
+
+<incompInfix>  ::= <appExpr> <infixFunc>
+                 | <infixFunc> <appExpr>
+
+<infixFunc>    ::= "`" <identifier> "`"
