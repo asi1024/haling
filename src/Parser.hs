@@ -55,21 +55,19 @@ parseStmt input = case parse stmt "" input of
 stmt :: Parser Stmt
 stmt = do
   whiteSpace
-  s <- stmtBody
+  s   <- stmtBody
   eof >> return s
 
 stmtBody :: Parser Stmt
-stmtBody = liftM Exp expr <|> decl <|> imp <|> dataDef
+stmtBody = try decl <|> try imp <|> try dataDef <|> liftM Exp expr
 
 decl :: Parser Stmt
 decl = do
-  _    <- symbol "let"
+  _            <- symbol "let"
   (name, args) <- declNames
-  reservedOp "="
-  e <- expr
-  return $ Decl name (case args of
-                        [] -> e
-                        l  -> decomposeMultArgs e l)
+  reservedOp      "="
+  e            <- expr
+  return $ Decl name $ decomposeMultArgs e args
 
 declNames :: Parser (String, [String])
 declNames =  (do op <- between (symbol "(") (symbol ")") anyOperator
@@ -83,29 +81,25 @@ declNames =  (do op <- between (symbol "(") (symbol ")") anyOperator
                  return (name, args))
 
 imp :: Parser Stmt
-imp = do
-  _ <- symbol "import"
-  name <- identifier
-  return $ Import name
+imp = liftM Import (symbol "import" >> identifier)
 
 dataDef :: Parser Stmt
 dataDef = do
-  _    <- symbol "data"
-  name <- identifier
+  name <- (symbol "data" >> identifier)
   reservedOp "="
   l <- many1 identifier `sepBy` (symbol "|")
   return $ Data name $ map (\x -> (head x, tail x)) l
 
+
 expr :: Parser Expr
-expr =  lambda
-    <|> prim
+expr =  lambda <|> prim
 
 lambda :: Parser Expr
 lambda = do
   reservedOp "\\"
-  args <- many1 identifier
+  args    <- many1 identifier
   reservedOp "->"
-  e <- expr
+  e       <- expr
   return $ decomposeMultArgs e args
 
 prim :: Parser Expr
@@ -115,12 +109,7 @@ infixAppExpr :: Parser Expr
 infixAppExpr = appExpr `chainl1` infixFuncApp
 
 infixFuncApp :: Parser (Expr -> Expr -> Expr)
-infixFuncApp = do
-  f <- infixFunc
-  return $ (\a b -> App (App (Var f) a) b)
-
-infixFunc :: Parser String
-infixFunc = between (reservedOp "`") (reservedOp "`") identifier
+infixFuncApp = liftM (\f a b -> App (App (Var f) a) b) infixFunc
 
 appExpr :: Parser Expr
 appExpr = unitExpr `chainl1` (return App)
@@ -131,7 +120,7 @@ unitExpr =  liftM (Val . fromIntegral) natural
                if isConst name
                  then return $ Const name
                  else return $ Var name
-        <|> try ifstmt
+        <|> ifstmt
         <|> parens enclosedExpr
 
 ifstmt :: Parser Expr
@@ -142,9 +131,9 @@ ifstmt = do
   return $ If cond t f
 
 enclosedExpr :: Parser Expr
-enclosedExpr =  try expr
-            <|> try incompOp
-            <|> incompInfix
+enclosedExpr = try expr
+           <|> try incompOp
+           <|> incompInfix
 
 incompOp :: Parser Expr
 incompOp = do
@@ -158,12 +147,15 @@ incompOp = do
              (_, _)             -> undefined
 
 incompInfix :: Parser Expr
-incompInfix =  try (do lop <- appExpr
-                       f   <- infixFunc
-                       return $ App (Var f) lop)
-           <|> do f   <- infixFunc
-                  rop <- appExpr
-                  return $ Fun "x" $ App (App (Var f) (Var "x")) rop
+incompInfix = try (do lop <- appExpr
+                      f   <- infixFunc
+                      return $ App (Var f) lop)
+          <|> do f   <- infixFunc
+                 rop <- appExpr
+                 return $ Fun "x" $ App (App (Var f) (Var "x")) rop
+
+infixFunc :: Parser String
+infixFunc = between (reservedOp "`") (reservedOp "`") identifier
 
 
 -- Utility
@@ -171,19 +163,18 @@ incompInfix =  try (do lop <- appExpr
 table :: [[Operator String () Identity Expr]]
 table = [[special_infix AssocLeft],
          [op_prefix (reservedOp "-") neg],
-         [op_infix (reservedOp "*") (opApp "*") AssocLeft],
-         [op_infix (reservedOp "+") (opApp "+") AssocLeft,
-          op_infix (reservedOp "-") (opApp "-")  AssocLeft],
-         [op_infix (reservedOp "<") (opApp "<") AssocLeft,
-          op_infix (reservedOp "<=") (opApp "<=") AssocLeft,
-          op_infix (reservedOp ">") (opApp ">") AssocLeft,
-          op_infix (reservedOp ">=") (opApp ">=") AssocLeft,
-          op_infix (reservedOp "==") (opApp "==") AssocLeft]]
+         [op_infix  (reservedOp "*")  (opApp "*")  AssocLeft],
+         [op_infix  (reservedOp "+")  (opApp "+")  AssocLeft,
+          op_infix  (reservedOp "-")  (opApp "-")  AssocLeft],
+         [op_infix  (reservedOp "<")  (opApp "<")  AssocLeft,
+          op_infix  (reservedOp "<=") (opApp "<=") AssocLeft,
+          op_infix  (reservedOp ">")  (opApp ">")  AssocLeft,
+          op_infix  (reservedOp ">=") (opApp ">=") AssocLeft,
+          op_infix  (reservedOp "==") (opApp "==") AssocLeft]]
     where
       op_prefix s f       = Prefix (s >> return f)
-      op_infix  s f assoc = Infix (s >> return f) assoc
-      special_infix assoc = Infix (do op <- operator
-                                      return $ opApp op) assoc
+      op_infix  s f assoc = Infix  (s >> return f) assoc
+      special_infix assoc = Infix  (liftM opApp operator) assoc
 
 decomposeMultArgs :: Expr -> [String] -> Expr
 decomposeMultArgs = foldr Fun
