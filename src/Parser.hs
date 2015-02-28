@@ -45,6 +45,8 @@ natural :: Parser Integer
 natural = P.natural lexer
 
 
+-- Syntax Tree
+
 parseStmt :: String -> Check Stmt
 parseStmt input = case parse stmt "" input of
                     Left  e -> Left $ show e
@@ -58,9 +60,6 @@ stmt = do
 
 stmtBody :: Parser Stmt
 stmtBody = liftM Exp expr <|> decl <|> imp <|> dataDef
-
-decomposeMultArgs :: Expr -> [String] -> Expr
-decomposeMultArgs = foldr Fun
 
 decl :: Parser Stmt
 decl = do
@@ -111,34 +110,6 @@ lambda = do
 
 prim :: Parser Expr
 prim = buildExpressionParser table infixAppExpr
-
-opExpr :: String -> Expr
-opExpr op = if op `elem` primOpers
-            then Fun "x" (Fun "y" $ Prim op (Var "x") (Var "y"))
-            else Fun "x" (Fun "y" $ App (App (Var op) (Var "x")) (Var "y"))
-
-opApp :: String -> Expr -> Expr -> Expr
-opApp op l r = App (App (opExpr op) l) r
-
-neg :: Expr -> Expr
-neg = opApp "*" (Val $ -1)
-
-table :: [[Operator String () Identity Expr]]
-table = [[special_infix AssocLeft],
-         [op_prefix (reservedOp "-") neg],
-         [op_infix (reservedOp "*") (opApp "*") AssocLeft],
-         [op_infix (reservedOp "+") (opApp "+") AssocLeft,
-          op_infix (reservedOp "-") (opApp "-")  AssocLeft],
-         [op_infix (reservedOp "<") (opApp "<") AssocLeft,
-          op_infix (reservedOp "<=") (opApp "<=") AssocLeft,
-          op_infix (reservedOp ">") (opApp ">") AssocLeft,
-          op_infix (reservedOp ">=") (opApp ">=") AssocLeft,
-          op_infix (reservedOp "==") (opApp "==") AssocLeft]]
-    where
-      op_prefix s f       = Prefix (s >> return f)
-      op_infix  s f assoc = Infix (s >> return f) assoc
-      special_infix assoc = Infix (do op <- operator
-                                      return $ opApp op) assoc
 
 infixAppExpr :: Parser Expr
 infixAppExpr = appExpr `chainl1` infixFuncApp
@@ -193,3 +164,37 @@ incompInfix =  try (do lop <- appExpr
            <|> do f   <- infixFunc
                   rop <- appExpr
                   return $ Fun "x" $ App (App (Var f) (Var "x")) rop
+
+
+-- Utility
+
+table :: [[Operator String () Identity Expr]]
+table = [[special_infix AssocLeft],
+         [op_prefix (reservedOp "-") neg],
+         [op_infix (reservedOp "*") (opApp "*") AssocLeft],
+         [op_infix (reservedOp "+") (opApp "+") AssocLeft,
+          op_infix (reservedOp "-") (opApp "-")  AssocLeft],
+         [op_infix (reservedOp "<") (opApp "<") AssocLeft,
+          op_infix (reservedOp "<=") (opApp "<=") AssocLeft,
+          op_infix (reservedOp ">") (opApp ">") AssocLeft,
+          op_infix (reservedOp ">=") (opApp ">=") AssocLeft,
+          op_infix (reservedOp "==") (opApp "==") AssocLeft]]
+    where
+      op_prefix s f       = Prefix (s >> return f)
+      op_infix  s f assoc = Infix (s >> return f) assoc
+      special_infix assoc = Infix (do op <- operator
+                                      return $ opApp op) assoc
+
+decomposeMultArgs :: Expr -> [String] -> Expr
+decomposeMultArgs = foldr Fun
+
+opExpr :: String -> Expr
+opExpr op = if op `elem` primOpers
+            then Fun "x" (Fun "y" $ Prim op (Var "x") (Var "y"))
+            else Fun "x" (Fun "y" $ App (App (Var op) (Var "x")) (Var "y"))
+
+opApp :: String -> Expr -> Expr -> Expr
+opApp op l r = App (App (opExpr op) l) r
+
+neg :: Expr -> Expr
+neg = opApp "*" (Val $ -1)
