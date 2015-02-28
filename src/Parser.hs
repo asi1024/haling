@@ -143,7 +143,7 @@ incompOp = do
   rop <- optionMaybe infixAppExpr
   return $ case (lop, rop) of
              (Just l, Nothing)  -> App (opExpr op) l
-             (Nothing, Just r)  -> Fun "x" $ opApp op (Var "x") r
+             (Nothing, Just r)  -> Fun "@x" $ opApp op (Var "@x") r
              (Nothing, Nothing) -> opExpr op
              (_, _)             -> undefined
 
@@ -153,7 +153,7 @@ incompInfix = try (do lop <- appExpr
                       return $ App (Var f) lop)
           <|> do f   <- infixFunc
                  rop <- appExpr
-                 return $ Fun "x" $ App (App (Var f) (Var "x")) rop
+                 return $ Fun "@x" $ App (App (Var f) (Var "@x")) rop
 
 infixFunc :: Parser String
 infixFunc = between (reservedOp "`") (reservedOp "`") identifier
@@ -182,8 +182,8 @@ decomposeMultArgs = foldr Fun
 
 opExpr :: String -> Expr
 opExpr op = if op `elem` primOpers
-            then Fun "x" (Fun "y" $ Prim op (Var "x") (Var "y"))
-            else Fun "x" (Fun "y" $ App (App (Var op) (Var "x")) (Var "y"))
+            then Fun "@x" (Fun "@y" $ Prim op (Var "@x") (Var "@y"))
+            else Fun "@x" (Fun "@y" $ App (App (Var op) (Var "@x")) (Var "@y"))
 
 opApp :: String -> Expr -> Expr -> Expr
 opApp op l r = App (App (opExpr op) l) r

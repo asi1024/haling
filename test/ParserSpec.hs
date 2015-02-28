@@ -12,8 +12,8 @@ spec = do
       parseStmt "1" `shouldBe` (Right $ Exp $ Val 1)
 
     it "should return wrapped primitive operator" $ do
-      opExpr "+"  `shouldBe` Fun "x" (Fun "y" $ Prim "+" (Var "x") (Var "y"))
-      opExpr "&=" `shouldBe` Fun "x" (Fun "y" $ App (App (Var "&=") (Var "x")) (Var "y"))
+      opExpr "+"  `shouldBe` Fun "@x" (Fun "@y" $ Prim "+" (Var "@x") (Var "@y"))
+      opExpr "&=" `shouldBe` Fun "@x" (Fun "@y" $ App (App (Var "&=") (Var "@x")) (Var "@y"))
       opApp "+" (Val 1) (Var "a") `shouldBe` App (App (opExpr "+") (Val 1)) (Var "a")
 
     it "should return (-1) * a with -a" $ do
@@ -70,7 +70,7 @@ spec = do
 
     it "should parse partial applying of infix operator and function" $ do
       parseStmt "(+)" `shouldBe` (Right $ Exp $ opExpr "+")
-      parseStmt "(+ f a)" `shouldBe` (Right $ Exp $ Fun "x" $ opApp "+" (Var "x") (App (Var "f") (Var "a")))
+      parseStmt "(+ f a)" `shouldBe` (Right $ Exp $ Fun "@x" $ opApp "+" (Var "@x") (App (Var "f") (Var "a")))
       parseStmt "(1 `f` a -)" `shouldBe` (Right $ Exp $ App (opExpr "-") $ App (App (Var "f") (Val 1)) (Var "a"))
 
     it "AST of syntactic sugar must be equal to one of the original syntax" $ do
