@@ -70,15 +70,16 @@ decl = do
   return $ Decl name $ decomposeMultArgs e args
 
 declNames :: Parser (String, [String])
-declNames =  (do op <- between (symbol "(") (symbol ")") anyOperator
-                 return $ (op, []))
-         <|> try (do lop <- identifier
-                     f   <- choice [infixFunc, anyOperator]
-                     rop <- identifier
-                     return $ (f, [lop, rop]))
-         <|> (do name <- identifier
-                 args <- option [] (many1 identifier)
-                 return (name, args))
+declNames = try (do lop <- identifier
+                    f   <- choice [infixFunc, anyOperator]
+                    rop <- identifier
+                    return $ (f, [lop, rop]))
+        <|> (do name <- funcName
+                args <- option [] (many1 identifier)
+                return (name, args))
+
+funcName :: Parser String
+funcName = identifier <|> between (symbol "(") (symbol ")") anyOperator
 
 imp :: Parser Stmt
 imp = liftM Import (symbol "import" >> identifier)
