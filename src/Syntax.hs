@@ -1,11 +1,10 @@
 module Syntax where
 
-import Data.Char(isAsciiUpper)
+import Data.Char (isAsciiUpper)
+import Data.List (union)
+import Data.Maybe (fromJust)
 
 type Check = Either String
-
-err :: String -> Check a
-err s = Left s
 
 isConst :: String -> Bool
 isConst = isAsciiUpper . head
@@ -29,9 +28,10 @@ data Stmt = Exp Expr
           | Import String
           deriving (Eq, Show)
 
-data Ty = TyInt
+data Ty = TyConst String
         | TyVar Int
         | TyFun Ty Ty
+        | Undefty
         deriving (Eq)
 
 data Exval = ValV Int
@@ -51,8 +51,20 @@ instance Show Expr where
   show (App a b)    = concat ["(App", show a, ", ", show b, ")"]
 
 instance Show Ty where
-  show TyInt = "Int"
-  show _     = undefined
+  show a = showTy (zip (freevarTy a) ['a'..]) a
+
+freevarTy :: Ty -> [Int]
+freevarTy (TyConst _) = []
+freevarTy (TyVar i)   = [i]
+freevarTy (TyFun a b) = freevarTy a `union` freevarTy b
+freevarTy Undefty     = []
+
+showTy :: [(Int, Char)] -> Ty -> String
+showTy _ (TyConst t) = t
+showTy f (TyVar i)   = [fromJust $ lookup i f]
+showTy f (TyFun a@(TyFun _ _) b) = "(" ++ showTy f a ++ ") -> " ++ showTy f b
+showTy f (TyFun a b) = showTy f a ++ " -> " ++ showTy f b
+showTy _ Undefty     = "undef"
 
 instance Show Exval where
   show (ValV i) = show i

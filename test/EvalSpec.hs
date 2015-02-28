@@ -14,20 +14,16 @@ declStr str env =
     Left er -> error er
     Right s -> decl env s
 
-decl_ :: Env -> String -> Env
-decl_ env str = let (e, _, _) = declStr str env in e
-
-eval_ :: Env -> String -> String
-eval_ env str = let (_, _, e) = declStr str env in show e
-
-evalStrWithEnv :: Env -> [String] -> String
-evalStrWithEnv env str = eval_ (foldl decl_ env $ init str) $ last str
+evalWithEnv :: Env -> [String] -> String
+evalWithEnv _   []     = ""
+evalWithEnv env [x]    = let (_, _, e) = declStr x env in show e
+evalWithEnv env (x:xs) = let (e, _, _) = declStr x env in evalWithEnv e xs
 
 evalStr :: [String] -> String
-evalStr = evalStrWithEnv empty
+evalStr = evalWithEnv empty
 
 evalPrelude :: [String] -> String
-evalPrelude = evalStrWithEnv $ foldl decl_ empty prelude
+evalPrelude s = evalStr $ prelude ++ s
 
 prelude :: [String]
 prelude = ["data Bool = True | False"]

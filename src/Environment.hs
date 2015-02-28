@@ -24,3 +24,12 @@ extendConst _ _ = undefined
 
 lookupConst :: String -> Env -> Exval
 lookupConst x (a, _) = fromJust $ lookup x a
+
+lookupTy :: String -> TyEnv -> Ty
+lookupTy s tyenv =
+  case lookup s tyenv of
+    Nothing -> error $ "Not in scope: \"" ++ s ++ "\""
+    Just a  -> a
+
+extendTy :: (String, Ty) -> TyEnv -> TyEnv
+extendTy x xs = (x : xs)
