@@ -23,7 +23,7 @@ data Expr = Val   Int
           deriving (Eq)
 
 data Stmt = Exp Expr
-          | Decl String Expr
+          | Decl [(String, Expr)]
           | Data String [(String, [String])]
           | Import String
           deriving (Eq, Show)

@@ -17,7 +17,7 @@ tyBool = TyConst "Bool"
 typing :: TyEnv -> Stmt -> TyState -> (TyState, (TyEnv, Ty))
 typing tyenv (Exp e) tystate = (ntystate, (tyenv, ty))
   where ((_, ty), ntystate) = runState (tyExp tyenv e) tystate
-typing tyenv (Decl _ _) tystate = (tystate, (tyenv, Undefty))
+typing tyenv (Decl _) tystate = (tystate, (tyenv, Undefty))
 typing tyenv (Data s l) tystate =
   if isConst s && all (\(x, y) -> isConst x && all isOK y) l
     then (tystate, (map makeTy l ++ tyenv, TyConst s))

@@ -31,8 +31,9 @@ driverLoop input output tystate tyenv env = do
               (a, b, c) <- driverLoop ninput stderr ntystate ntyenv env
               driverLoop input output a b c
             _ -> do
-              let (nenv, s, e) = decl env st
-              hPutStrLn output $ concat [s, " = ", show e, " :: ", show t]
+              let l = decl env st
+              mapM_ (hPutStrLn output) (map (\(_, s, e) -> concat [s, " = ", show e, " :: ", show t]) l)
+              let (nenv, _, _) = last l
               driverLoop input output ntystate ntyenv nenv ) err) ioerr
   where err e = do
           hPutStrLn stderr ("Error: " ++ show (e :: ErrorCall))

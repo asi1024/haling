@@ -4,9 +4,15 @@
 <stmtBody>     ::= <decl>
                  | <imp>
                  | <dataDef>
-                 | <expr>
+                 | <expr> <bind>opt
 
-<decl>         ::= "let" <declNames> "=" <expr>
+<bind>         ::= "where" <declBody> (";" <declBody>)* (";")opt
+
+<decl>         ::= "let" <declBody> (";" <declBody>)* (";")opt <localeval>opt
+
+<localeval>    ::= "in" <expr>
+
+<declBody>     ::= (<declNames> "=" <expr>)
 
 <declNames>    ::= "(" <anyOperator> ")"
                 | <identifier> (<infixFunc> | <anyOperator>) <identifier>

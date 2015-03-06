@@ -8,7 +8,7 @@ import qualified Text.Parsec.Token as P
 import           Text.Parsec.Language
 
 import Control.Monad(liftM, when)
-import Data.Functor.Identity(Identity)
+import Control.Monad.Identity(Identity)
 import Syntax
 
 def :: LanguageDef st
@@ -63,12 +63,17 @@ stmtBody = try decl <|> try imp <|> try dataDef <|> liftM Exp expr
 
 decl :: Parser Stmt
 decl = do
-  _            <- symbol "let"
+  _ <- symbol "let"
+  l <- declBody `sepBy1` (symbol ";")
+  option "" (symbol ";") >> (return $ Decl l)
+
+declBody :: Parser (String, Expr)
+declBody = do
   (name, args) <- declNames
   when (name `elem` primOpers) (fail "Primitive operator is overridden")
   reservedOp      "="
   e            <- expr
-  return $ Decl name $ decomposeMultArgs e args
+  return $ (name, decomposeMultArgs e args)
 
 declNames :: Parser (String, [String])
 declNames = try (do lop <- identifier

@@ -8,7 +8,7 @@ import Environment (empty)
 import Parser (parseStmt)
 import Syntax (Env, Exval)
 
-declStr :: String -> Env -> (Env, String, Exval)
+declStr :: String -> Env -> [(Env, String, Exval)]
 declStr str env =
   case parseStmt str of
     Left er -> error er
@@ -16,8 +16,8 @@ declStr str env =
 
 evalWithEnv :: Env -> [String] -> String
 evalWithEnv _   []     = ""
-evalWithEnv env [x]    = let (_, _, e) = declStr x env in show e
-evalWithEnv env (x:xs) = let (e, _, _) = declStr x env in evalWithEnv e xs
+evalWithEnv env [x]    = let (_, _, e) = last $ declStr x env in show e
+evalWithEnv env (x:xs) = let (e, _, _) = last $ declStr x env in evalWithEnv e xs
 
 evalStr :: [String] -> String
 evalStr = evalWithEnv empty
@@ -88,3 +88,8 @@ spec = do
       evalStr ["let x `f` y = x - y", "10 `f` 5 `f` 3"] `shouldBe` "2"
       evalStr ["let a &= b = a + b", "1 * 2 &= 1"] `shouldBe` "3"
       evalStr ["let (&=) = (+)", "1 * 2 &= 1"] `shouldBe` "3"
+
+    it "should caluculate multiple let" $ do
+      evalStr ["let f x y = x - y; a = f 1 4", "f 2 4 - a"] `shouldBe` "1"
+      evalStr ["let f x y z = x - y + z; g = f 1 4", "g 5"] `shouldBe` "2"
+      evalStr ["let x `f` y = x * y; (&=) = f", "2 &= 3"] `shouldBe` "6"
