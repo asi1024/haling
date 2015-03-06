@@ -7,7 +7,7 @@ import           Text.Parsec.Expr
 import qualified Text.Parsec.Token as P
 import           Text.Parsec.Language
 
-import Control.Monad(liftM)
+import Control.Monad(liftM, when)
 import Data.Functor.Identity(Identity)
 import Syntax
 
@@ -65,6 +65,7 @@ decl :: Parser Stmt
 decl = do
   _            <- symbol "let"
   (name, args) <- declNames
+  when (name `elem` primOpers) (fail "Primitive operator is overridden")
   reservedOp      "="
   e            <- expr
   return $ Decl name $ decomposeMultArgs e args
