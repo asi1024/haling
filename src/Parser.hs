@@ -64,15 +64,14 @@ stmtBody = try decl <|> try imp <|> try dataDef <|> liftM Exp expr
 decl :: Parser Stmt
 decl = do
   _ <- symbol "let"
-  l <- declBody `sepBy1` (symbol ";")
-  option "" (symbol ";") >> (return $ Decl l)
+  l <- declBody `sepEndBy1` (symbol ";")
+  return $ Decl l
 
 declBody :: Parser (String, Expr)
 declBody = do
-  (name, args) <- declNames
+  (name, args) <- try declNames
   when (name `elem` primOpers) (fail "Primitive operator is overridden")
-  reservedOp      "="
-  e            <- expr
+  e <- reservedOp "=" >> expr
   return $ (name, decomposeMultArgs e args)
 
 declNames :: Parser (String, [String])
@@ -83,6 +82,7 @@ declNames = try (do lop <- identifier
         <|> (do name <- funcName
                 args <- option [] (many1 identifier)
                 return (name, args))
+        <?> "declNames"
 
 funcName :: Parser String
 funcName = identifier <|> between (symbol "(") (symbol ")") anyOperator
@@ -99,7 +99,13 @@ dataDef = do
 
 
 expr :: Parser Expr
-expr =  lambda <|> prim
+expr =  try letIn <|> try lambda <|> prim
+
+letIn :: Parser Expr
+letIn = do
+  l <- symbol "let" >> (declBody `sepEndBy1` (symbol ";"))
+  e <- (symbol "in") >> expr
+  return $ decomposeBinds e l
 
 lambda :: Parser Expr
 lambda = do
@@ -127,8 +133,9 @@ unitExpr =  liftM (Val . fromIntegral) natural
                if isConst name
                  then return $ Const name
                  else return $ Var name
-        <|> ifstmt
+        <|> try ifstmt
         <|> parens enclosedExpr
+        <?> "unitExpr"
 
 ifstmt :: Parser Expr
 ifstmt = do
@@ -185,6 +192,9 @@ table = [[special_infix AssocLeft],
 
 decomposeMultArgs :: Expr -> [String] -> Expr
 decomposeMultArgs = foldr Fun
+
+decomposeBinds :: Expr -> [(String, Expr)] -> Expr
+decomposeBinds = foldl (\acc (s, e) -> App (Fun s acc) e)
 
 opExpr :: String -> Expr
 opExpr op = if op `elem` primOpers
