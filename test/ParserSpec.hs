@@ -84,3 +84,12 @@ spec = do
                                                                         ("&=", Fun "x" (Fun "y" $ opApp "+" (Var "x") (Var "y")))])
       parseStmt "let f x = x * 2; a = f 2" `shouldBe` (Right $ Decl $ [("f", Fun "x" $ opApp "*" (Var "x") (Val 2)),
                                                                        ("a", App (Var "f") (Val 2))])
+
+    it "should parse local definition" $ do
+      parseStmt "let a = 1 in a" `shouldBe` (Right $ Exp $ App (Fun "a" (Var "a")) (Val 1))
+      parseStmt "let a = \\x -> x; b = 2; in a b"
+                    `shouldBe` (Right $ Exp $ App (Fun "a" (App (Fun "b" (App (Var "a") (Var "b"))) (Val 2))) (Fun "x" (Var "x")))
+      parseStmt "let a = 1 in let b = 2 in a + b"
+                    `shouldBe` (Right $ Exp $ App (Fun "a" (App (Fun "b" (opApp "+" (Var "a") (Var "b"))) (Val 2))) (Val 1))
+      parseStmt "1 + let a = 1 in a"
+                    `shouldBe` (Right $ Exp $ opApp "+" (Val 1) (App (Fun "a" (Var "a")) (Val 1)))

@@ -93,3 +93,10 @@ spec = do
       evalStr ["let f x y = x - y; a = f 1 4", "f 2 4 - a"] `shouldBe` "1"
       evalStr ["let f x y z = x - y + z; g = f 1 4", "g 5"] `shouldBe` "2"
       evalStr ["let x `f` y = x * y; (&=) = f", "2 &= 3"] `shouldBe` "6"
+
+    it "should caluculate local definition" $ do
+      evalStr ["let a = 1; b = a + 2 in a - b"] `shouldBe` "-2"
+      evalStr ["let a = 1; f x = \\y -> x + y + a in f 1 1"] `shouldBe` "3"
+      evalStr ["let a = 1 in let b = 2 in a - b"] `shouldBe` "-1"
+      evalStr ["1 + let a = 1 in a"] `shouldBe` "2"
+      evalStr ["let a = 1 in if a > 0 then let b = 2 in a + b else 0"] `shouldBe` "3"

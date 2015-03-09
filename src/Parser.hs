@@ -55,21 +55,23 @@ parseStmt input = case parse stmt "" input of
 stmt :: Parser Stmt
 stmt = do
   whiteSpace
-  s   <- stmtBody
+  s <- stmtBody
   eof >> return s
 
 stmtBody :: Parser Stmt
-stmtBody = try decl <|> try imp <|> try dataDef <|> liftM Exp expr
+stmtBody = liftM Exp (try expr) <|> try decl <|> try imp <|> try dataDef
 
 decl :: Parser Stmt
 decl = do
-  _ <- symbol "let"
-  l <- declBody `sepEndBy1` (symbol ";")
+  l <- symbol "let" >> binds
   return $ Decl l
+
+binds :: Parser [(String, Expr)]
+binds = declBody `sepEndBy1` (symbol ";")
 
 declBody :: Parser (String, Expr)
 declBody = do
-  (name, args) <- try declNames
+  (name, args) <- declNames
   when (name `elem` primOpers) (fail "Primitive operator is overridden")
   e <- reservedOp "=" >> expr
   return $ (name, decomposeMultArgs e args)
@@ -79,10 +81,9 @@ declNames = try (do lop <- identifier
                     f   <- choice [infixFunc, anyOperator]
                     rop <- identifier
                     return $ (f, [lop, rop]))
-        <|> (do name <- funcName
-                args <- option [] (many1 identifier)
-                return (name, args))
-        <?> "declNames"
+         <|> (do name <- funcName
+                 args <- option [] (many1 identifier)
+                 return (name, args))
 
 funcName :: Parser String
 funcName = identifier <|> between (symbol "(") (symbol ")") anyOperator
@@ -99,13 +100,7 @@ dataDef = do
 
 
 expr :: Parser Expr
-expr =  try letIn <|> try lambda <|> prim
-
-letIn :: Parser Expr
-letIn = do
-  l <- symbol "let" >> (declBody `sepEndBy1` (symbol ";"))
-  e <- (symbol "in") >> expr
-  return $ decomposeBinds e l
+expr = try lambda <|> prim
 
 lambda :: Parser Expr
 lambda = do
@@ -125,7 +120,13 @@ infixFuncApp :: Parser (Expr -> Expr -> Expr)
 infixFuncApp = liftM (\f a b -> App (App (Var f) a) b) infixFunc
 
 appExpr :: Parser Expr
-appExpr = unitExpr `chainl1` (return App)
+appExpr = try letIn <|> unitExpr `chainl1` (return App)
+
+letIn :: Parser Expr
+letIn = do
+  l <- symbol "let" >> binds
+  e <- symbol "in"  >> expr
+  return $ decomposeBinds e l
 
 unitExpr :: Parser Expr
 unitExpr =  liftM (Val . fromIntegral) natural
@@ -135,7 +136,6 @@ unitExpr =  liftM (Val . fromIntegral) natural
                  else return $ Var name
         <|> try ifstmt
         <|> parens enclosedExpr
-        <?> "unitExpr"
 
 ifstmt :: Parser Expr
 ifstmt = do
@@ -194,7 +194,7 @@ decomposeMultArgs :: Expr -> [String] -> Expr
 decomposeMultArgs = foldr Fun
 
 decomposeBinds :: Expr -> [(String, Expr)] -> Expr
-decomposeBinds = foldl (\acc (s, e) -> App (Fun s acc) e)
+decomposeBinds = foldr (\(s, e) acc -> App (Fun s acc) e)
 
 opExpr :: String -> Expr
 opExpr op = if op `elem` primOpers

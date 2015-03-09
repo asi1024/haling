@@ -22,9 +22,7 @@
 
 
 
-<expr>         ::= "let" <binds> "in" <expr>
-                 | <lambda>
-		 | <prim>
+<expr>         ::= <lambda> | <prim>
 
 <lambda>       ::= "\" <identifier>+ "->" <expr>
 
@@ -32,7 +30,8 @@
 
 <infixAppExpr> ::= <appExpr> (<infixFunc> <appExpr>)*
 
-<appExpr>      ::= <unitExpr>+
+<appExpr>      ::= "let" <binds> "in" <expr>
+		 | <unitExpr>+
 
 <unitExpr>     ::= <natural>
                  | <identifier>
