@@ -63,11 +63,11 @@ stmtBody = liftM Exp (try expr) <|> try decl <|> try imp <|> try dataDef
 
 decl :: Parser Stmt
 decl = do
-  l <- symbol "let" >> binds
+  l <- symbol "let" >> assign
   return $ Decl l
 
-binds :: Parser [(String, Expr)]
-binds = declBody `sepEndBy1` (symbol ";")
+assign :: Parser [(String, Expr)]
+assign = declBody `sepEndBy1` (symbol ";")
 
 declBody :: Parser (String, Expr)
 declBody = do
@@ -124,9 +124,9 @@ appExpr = try letIn <|> unitExpr `chainl1` (return App)
 
 letIn :: Parser Expr
 letIn = do
-  l <- symbol "let" >> binds
+  l <- symbol "let" >> assign
   e <- symbol "in"  >> expr
-  return $ decomposeBinds e l
+  return $ decomposeAssign e l
 
 unitExpr :: Parser Expr
 unitExpr =  liftM (Val . fromIntegral) natural
@@ -193,8 +193,8 @@ table = [[special_infix AssocLeft],
 decomposeMultArgs :: Expr -> [String] -> Expr
 decomposeMultArgs = foldr Fun
 
-decomposeBinds :: Expr -> [(String, Expr)] -> Expr
-decomposeBinds = foldr (\(s, e) acc -> App (Fun s acc) e)
+decomposeAssign :: Expr -> [(String, Expr)] -> Expr
+decomposeAssign = foldr (\(s, e) acc -> App (Fun s acc) e)
 
 opExpr :: String -> Expr
 opExpr op = if op `elem` primOpers
