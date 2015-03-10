@@ -34,6 +34,7 @@ eval env (If c t f) =
       (DatV "True"  []) -> eval env t
       (DatV "False" []) -> eval env f
       _                 -> error "Eval.eval: If"
+eval env (Fix s e) = FixV env s e
 eval env (Fun a b) = FunV env a b
 eval env (App a b) =
   case eval env a of

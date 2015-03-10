@@ -67,7 +67,10 @@ decl = do
   return $ Decl l
 
 assign :: Parser [(String, Expr)]
-assign = declBody `sepEndBy1` (symbol ";")
+assign = do
+  l <- declBody `sepEndBy1` (symbol ";")
+  when (duplicateAssign l) (fail "Duplicate assign")
+  return l
 
 declBody :: Parser (String, Expr)
 declBody = do
@@ -194,7 +197,15 @@ decomposeMultArgs :: Expr -> [String] -> Expr
 decomposeMultArgs = foldr Fun
 
 decomposeAssign :: Expr -> [(String, Expr)] -> Expr
-decomposeAssign = foldr (\(s, e) acc -> App (Fun s acc) e)
+decomposeAssign = foldr (\(s, e) acc -> App (Fun s acc) (Fix s e))
+
+duplicateAssign :: [(String, Expr)] -> Bool
+duplicateAssign = duplicateAssign' . map fst
+
+duplicateAssign' :: [String] -> Bool
+duplicateAssign' []     = False
+duplicateAssign' [_]    = False
+duplicateAssign' (x:xs) = (x `elem` xs) || duplicateAssign' xs
 
 opExpr :: String -> Expr
 opExpr op = if op `elem` primOpers

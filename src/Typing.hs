@@ -43,6 +43,11 @@ tyExp tyenv (If a b c) = do
   let s4 = unify $ eqsOfSubst s1 ++ eqsOfSubst s2 ++ eqsOfSubst s3
                 ++ [(ty1, tyBool), (ty2, ty3)]
   return (s4, substType s4 ty2)
+tyExp tyenv (Fix s e) = do
+  ty   <- liftM TyVar freshTyvar
+  (s1, ty1) <- tyExp (extendTy (s, ty) tyenv) e
+  let s2 = unify $ eqsOfSubst s1 ++ [(ty, ty1)]
+  return (s2, substType s2 ty)
 tyExp tyenv (Fun a b) = do
   domty   <- liftM TyVar freshTyvar
   (s, ty) <- tyExp (extendTy (a, domty) tyenv) b
