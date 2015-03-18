@@ -38,13 +38,13 @@ spec = do
                 `shouldBe` (Right $ Exp $ App (App (Var "map") (Fun "x" (Var "x"))) (Var "a"))
 
     it "should return Decl with let" $ do
-      parseStmt "let x = a" `shouldBe` (Right $ Decl "x" (Var "a"))
+      parseStmt "let x = a" `shouldBe` (Right $ Decl [("x", Var "a")])
 
     it "should return Decl with let" $ do
       parseStmt "let f x = x + 1"
-                    `shouldBe` (Right $ Decl "f" (Fun "x" (opApp "+" (Var "x") (Val 1))))
+                    `shouldBe` (Right $ Decl [("f", (Fun "x" (opApp "+" (Var "x") (Val 1))))])
       parseStmt "let f x y = x + y"
-                    `shouldBe` (Right $ Decl "f" (Fun "x" (Fun "y" $ opApp "+" (Var "x") (Var "y"))))
+                    `shouldBe` (Right $ Decl [("f", (Fun "x" (Fun "y" $ opApp "+" (Var "x") (Var "y"))))])
 
     it "should return If with if-stmt" $ do
       parseStmt "if True then 1 + 1 else 2"
@@ -62,11 +62,11 @@ spec = do
       parseStmt "if f then t else 1 `f` a"
                     `shouldBe` (Right $ Exp $ If (Var "f") (Var "t") (App (App (Var "f") (Val 1)) (Var "a")))
       parseStmt "let x `f` y = 1"
-                    `shouldBe` (Right $ Decl "f" (Fun "x" (Fun "y" (Val 1))))
+                    `shouldBe` (Right $ Decl [("f", (Fun "x" (Fun "y" (Val 1))))])
       parseStmt "let (&=) = (+)"
-                    `shouldBe` (Right $ Decl "&=" $ opExpr "+")
+                    `shouldBe` (Right $ Decl [("&=", opExpr "+")])
       parseStmt "let a &= b = a + b"
-                    `shouldBe` (Right $ Decl "&=" $ Fun "a" (Fun "b" $ opApp "+" (Var "a") (Var "b")))
+                    `shouldBe` (Right $ Decl [("&=", Fun "a" (Fun "b" $ opApp "+" (Var "a") (Var "b")))])
 
     it "should parse partial applying of infix operator and function" $ do
       parseStmt "(+)" `shouldBe` (Right $ Exp $ opExpr "+")
@@ -78,3 +78,18 @@ spec = do
       parseStmt "f 1"     `shouldBe` parseStmt "(1 `f`)"
       parseStmt "(1 +) 1" `shouldBe` parseStmt "1 + 1"
       parseStmt "let x `f` y = x + y" `shouldBe` parseStmt "let f x y = x + y"
+
+    it "should parse multiple binds" $ do
+      parseStmt "let x = 1; x &= y = x + y" `shouldBe` (Right $ Decl $ [("x", (Val 1)),
+                                                                        ("&=", Fun "x" (Fun "y" $ opApp "+" (Var "x") (Var "y")))])
+      parseStmt "let f x = x * 2; a = f 2" `shouldBe` (Right $ Decl $ [("f", Fun "x" $ opApp "*" (Var "x") (Val 2)),
+                                                                       ("a", App (Var "f") (Val 2))])
+
+    it "should parse local definition" $ do
+      parseStmt "let a = 1 in a" `shouldBe` (Right $ Exp $ App (Fun "a" (Var "a")) (Fix "a" (Val 1)))
+      parseStmt "let a = \\x -> x; b = 2; in a b"
+                    `shouldBe` (Right $ Exp $ App (Fun "a" (App (Fun "b" (App (Var "a") (Var "b"))) (Fix "b" (Val 2)))) (Fix "a" (Fun "x" (Var "x"))))
+      parseStmt "let a = 1 in let b = 2 in a + b"
+                    `shouldBe` (Right $ Exp $ App (Fun "a" (App (Fun "b" (opApp "+" (Var "a") (Var "b"))) (Fix "b" (Val 2)))) (Fix "a" (Val 1)))
+      parseStmt "1 + let a = 1 in a"
+                    `shouldBe` (Right $ Exp $ opApp "+" (Val 1) (App (Fun "a" (Var "a")) (Fix "a" (Val 1))))

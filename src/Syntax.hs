@@ -18,12 +18,13 @@ data Expr = Val   Int
           | Var   String
           | Prim  String Expr Expr
           | If    Expr Expr Expr
+          | Fix   String Expr
           | Fun   String Expr
           | App   Expr Expr
           deriving (Eq)
 
 data Stmt = Exp Expr
-          | Decl String Expr
+          | Decl [(String, Expr)]
           | Data String [(String, [String])]
           | Import String
           deriving (Eq, Show)
@@ -47,6 +48,7 @@ instance Show Expr where
   show (Var s)      = s
   show (Prim f a b) = concat ["(Prim ", f, " ", show a, " ", show b, ")"]
   show (If c t f)   = concat ["(If ", show c, " then ", show t, " else ", show f, ")"]
+  show (Fix s e)    = concat ["(", show s, " = ", show e, ")"]
   show (Fun a b)    = concat ["(\\", show a, " -> ", show b, ")"]
   show (App a b)    = concat ["(App ", show a, ", ", show b, ")"]
 

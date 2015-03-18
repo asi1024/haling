@@ -17,7 +17,7 @@ tyBool = TyConst "Bool"
 typing :: TyEnv -> Stmt -> TyState -> (TyState, (TyEnv, Ty))
 typing tyenv (Exp e) tystate = (ntystate, (tyenv, ty))
   where ((_, ty), ntystate) = runState (tyExp tyenv e) tystate
-typing tyenv (Decl _ _) tystate = (tystate, (tyenv, Undefty))
+typing tyenv (Decl _) tystate = (tystate, (tyenv, Undefty))
 typing tyenv (Data s l) tystate =
   if isConst s && all (\(x, y) -> isConst x && all isOK y) l
     then (tystate, (map makeTy l ++ tyenv, TyConst s))
@@ -43,6 +43,11 @@ tyExp tyenv (If a b c) = do
   let s4 = unify $ eqsOfSubst s1 ++ eqsOfSubst s2 ++ eqsOfSubst s3
                 ++ [(ty1, tyBool), (ty2, ty3)]
   return (s4, substType s4 ty2)
+tyExp tyenv (Fix s e) = do
+  ty   <- liftM TyVar freshTyvar
+  (s1, ty1) <- tyExp (extendTy (s, ty) tyenv) e
+  let s2 = unify $ eqsOfSubst s1 ++ [(ty, ty1)]
+  return (s2, substType s2 ty)
 tyExp tyenv (Fun a b) = do
   domty   <- liftM TyVar freshTyvar
   (s, ty) <- tyExp (extendTy (a, domty) tyenv) b

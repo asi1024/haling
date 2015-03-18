@@ -6,7 +6,11 @@
                  | <dataDef>
                  | <expr>
 
-<decl>         ::= "let" <declNames> "=" <expr>
+<decl>         ::= "let" <assign>
+
+<assign>        ::= <declBody> (";" <declBody>)* (";")opt
+
+<declBody>     ::= <declNames> "=" <expr>
 
 <declNames>    ::= "(" <anyOperator> ")"
                 | <identifier> (<infixFunc> | <anyOperator>) <identifier>
@@ -26,7 +30,8 @@
 
 <infixAppExpr> ::= <appExpr> (<infixFunc> <appExpr>)*
 
-<appExpr>      ::= <unitExpr>+
+<appExpr>      ::= "let" <assign> "in" <expr>
+		 | <unitExpr>+
 
 <unitExpr>     ::= <natural>
                  | <identifier>

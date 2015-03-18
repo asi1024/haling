@@ -8,7 +8,7 @@ import qualified Text.Parsec.Token as P
 import           Text.Parsec.Language
 
 import Control.Monad(liftM, when)
-import Data.Functor.Identity(Identity)
+import Control.Monad.Identity(Identity)
 import Syntax
 
 def :: LanguageDef st
@@ -55,29 +55,38 @@ parseStmt input = case parse stmt "" input of
 stmt :: Parser Stmt
 stmt = do
   whiteSpace
-  s   <- stmtBody
+  s <- stmtBody
   eof >> return s
 
 stmtBody :: Parser Stmt
-stmtBody = try decl <|> try imp <|> try dataDef <|> liftM Exp expr
+stmtBody = liftM Exp (try expr) <|> try decl <|> try imp <|> try dataDef
 
 decl :: Parser Stmt
 decl = do
-  _            <- symbol "let"
+  l <- symbol "let" >> assign
+  return $ Decl l
+
+assign :: Parser [(String, Expr)]
+assign = do
+  l <- declBody `sepEndBy1` (symbol ";")
+  when (duplicateAssign l) (fail "Duplicate assign")
+  return l
+
+declBody :: Parser (String, Expr)
+declBody = do
   (name, args) <- declNames
   when (name `elem` primOpers) (fail "Primitive operator is overridden")
-  reservedOp      "="
-  e            <- expr
-  return $ Decl name $ decomposeMultArgs e args
+  e <- reservedOp "=" >> expr
+  return $ (name, decomposeMultArgs e args)
 
 declNames :: Parser (String, [String])
 declNames = try (do lop <- identifier
                     f   <- choice [infixFunc, anyOperator]
                     rop <- identifier
                     return $ (f, [lop, rop]))
-        <|> (do name <- funcName
-                args <- option [] (many1 identifier)
-                return (name, args))
+         <|> (do name <- funcName
+                 args <- option [] (many1 identifier)
+                 return (name, args))
 
 funcName :: Parser String
 funcName = identifier <|> between (symbol "(") (symbol ")") anyOperator
@@ -94,7 +103,7 @@ dataDef = do
 
 
 expr :: Parser Expr
-expr =  lambda <|> prim
+expr = try lambda <|> prim
 
 lambda :: Parser Expr
 lambda = do
@@ -114,7 +123,13 @@ infixFuncApp :: Parser (Expr -> Expr -> Expr)
 infixFuncApp = liftM (\f a b -> App (App (Var f) a) b) infixFunc
 
 appExpr :: Parser Expr
-appExpr = unitExpr `chainl1` (return App)
+appExpr = try letIn <|> unitExpr `chainl1` (return App)
+
+letIn :: Parser Expr
+letIn = do
+  l <- symbol "let" >> assign
+  e <- symbol "in"  >> expr
+  return $ decomposeAssign e l
 
 unitExpr :: Parser Expr
 unitExpr =  liftM (Val . fromIntegral) natural
@@ -122,7 +137,7 @@ unitExpr =  liftM (Val . fromIntegral) natural
                if isConst name
                  then return $ Const name
                  else return $ Var name
-        <|> ifstmt
+        <|> try ifstmt
         <|> parens enclosedExpr
 
 ifstmt :: Parser Expr
@@ -180,6 +195,17 @@ table = [[special_infix AssocLeft],
 
 decomposeMultArgs :: Expr -> [String] -> Expr
 decomposeMultArgs = foldr Fun
+
+decomposeAssign :: Expr -> [(String, Expr)] -> Expr
+decomposeAssign = foldr (\(s, e) acc -> App (Fun s acc) (Fix s e))
+
+duplicateAssign :: [(String, Expr)] -> Bool
+duplicateAssign = duplicateAssign' . map fst
+
+duplicateAssign' :: [String] -> Bool
+duplicateAssign' []     = False
+duplicateAssign' [_]    = False
+duplicateAssign' (x:xs) = (x `elem` xs) || duplicateAssign' xs
 
 opExpr :: String -> Expr
 opExpr op = if op `elem` primOpers
